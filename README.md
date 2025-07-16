@@ -20,7 +20,3 @@ flask-app-vercel
 └── vercel.json        # Vercel configuration
 ```
 
-The `vercel.json` file configures the Python runtime and also serves files from
-the `static/` directory using `@vercel/static`.
-
-Run the unit tests with `pytest`.
