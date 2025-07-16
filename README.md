@@ -6,19 +6,20 @@ This project extracts KPI data and tables from PowerPoint files and displays the
 
 ```
 flask-app-vercel
-├── api                # Application code served by Vercel
-│   ├── handlers       # HTTP request handlers
-│   ├── modules        # Core modules
-│   ├── static         # Static assets
-│   ├── templates      # HTML templates
-│   └── hello.py       # Flask entry point
-├── tests              # Unit tests
+├── handlers       # HTTP request handlers
+├── modules        # Core modules
+├── static         # Static assets
+│   ├── images
+│   ├── scripts
+│   └── styles
+├── templates      # HTML templates
+├── tests          # Unit tests
+├── app.py         # Flask entry point
 ├── requirements.txt   # Python dependencies
-└── vercel.json        # Vercel configuration
+└── flask.json     # Deployment configuration
 ```
 
-The code lives inside the `api/` directory so that Vercel exposes the Flask app
-as a serverless function. `vercel.json` configures the Python runtime and routes
-all requests to `api/hello.py`.
+`flask.json` tells Vercel to run `app.py` using the Python runtime and route all
+requests to it.
 
 Run the unit tests with `pytest`.

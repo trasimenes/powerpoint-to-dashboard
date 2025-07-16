@@ -3,8 +3,8 @@ from tempfile import NamedTemporaryFile
 
 from flask import Blueprint, flash, redirect, render_template, request
 
-from ..modules.database import insert_record, get_history
-from ..modules.pptx_utils import extract_pptx
+from modules.database import insert_record, get_history
+from modules.pptx_utils import extract_pptx
 
 routes = Blueprint('routes', __name__)
 
