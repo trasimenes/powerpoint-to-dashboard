@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Upload PPTX{% endblock %}
+{% block content %}
+<h2>Upload PPTX</h2>
+<form method="post" enctype="multipart/form-data">
+  <div class="mb-3">
+    <label for="pptx" class="form-label">PowerPoint file</label>
+    <input type="file" class="form-control" name="pptx" accept=".pptx" required>
+  </div>
+  <div class="mb-3">
+    <label for="start" class="form-label">Slide start</label>
+    <input type="number" class="form-control" name="start" value="31" min="1">
+  </div>
+  <div class="mb-3">
+    <label for="end" class="form-label">Slide end</label>
+    <input type="number" class="form-control" name="end" value="32" min="1">
+  </div>
+  <button type="submit" class="btn btn-primary">Upload</button>
+</form>
+{% endblock %}
