@@ -20,4 +20,3 @@ flask-app-vercel
 └── vercel.json        # Vercel configuration
 ```
 
-Run the unit tests with `pytest`.
