@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h2>Extraction Result</h2>
+<h4>KPIs / Texts (Slide {{ slides[0] }})</h4>
+<ul>
+  {% for item in kpis %}
+    <li>{{ item }}</li>
+  {% endfor %}
+</ul>
+<h4>Table Data (Slide {{ slides[1] }})</h4>
+<table class="table table-bordered table-sm">
+  <thead>
+    <tr>
+      {% for head in table.headers %}
+        <th>{{ head }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in table.rows %}
+    <tr>
+      {% for cell in row %}
+        <td>{{ cell }}</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
