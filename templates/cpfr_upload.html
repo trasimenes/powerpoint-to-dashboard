@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}Upload PowerPoint CPFR{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h3 class="card-title mb-0">
+          <i class="bi bi-upload me-2"></i>Upload PowerPoint → CPFR Dashboard
+        </h3>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Instructions :</strong> Uploadez votre fichier PowerPoint (.pptx) pour extraire les données des slides 31 et 32 et les convertir automatiquement en format CPFR pour le dashboard.
+        </div>
+        
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>Note :</strong> Le système tentera d'extraire automatiquement les KPIs (sessions, revenue, bookings, conversion rate) et les données d'offres (last minute, early booking) et de réservations (juillet, août, septembre) à partir du contenu des slides.
+        </div>
+        
+        <form method="post" enctype="multipart/form-data">
+          <div class="mb-4">
+            <label for="pptx" class="form-label fw-bold">
+              <i class="bi bi-file-earmark-ppt me-1"></i>Fichier PowerPoint
+            </label>
+            <input type="file" class="form-control form-control-lg" name="pptx" accept=".pptx" required>
+            <div class="form-text">Formats acceptés : .pptx uniquement (max 50MB)</div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="start" class="form-label fw-bold">
+                  <i class="bi bi-1-circle me-1"></i>Slide de début (KPIs)
+                </label>
+                <input type="number" class="form-control" name="start" value="31" min="1" required>
+                <div class="form-text">Slide contenant les KPIs et synthèse</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="end" class="form-label fw-bold">
+                  <i class="bi bi-2-circle me-1"></i>Slide de fin (Tableau)
+                </label>
+                <input type="number" class="form-control" name="end" value="32" min="1" required>
+                <div class="form-text">Slide contenant le tableau d'analyse</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <a href="/cpfr" class="btn btn-secondary btn-lg me-2">
+              <i class="bi bi-arrow-left me-2"></i>Retour au Dashboard
+            </a>
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i class="bi bi-upload me-2"></i>Extraire et Convertir en CPFR
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Informations sur l'extraction -->
+    <div class="card mt-4">
+      <div class="card-header bg-light">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-info-circle me-2"></i>Comment fonctionne l'extraction CPFR
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6>KPIs extraits automatiquement :</h6>
+            <ul class="list-unstyled">
+              <li><i class="bi bi-check-circle text-success me-2"></i>Sessions (recherche de mots-clés : "session", "visite")</li>
+              <li><i class="bi bi-check-circle text-success me-2"></i>Revenue B2C (recherche de mots-clés : "revenue", "chiffre", "CA")</li>
+              <li><i class="bi bi-check-circle text-success me-2"></i>Réservations (recherche de mots-clés : "booking", "réservation")</li>
+              <li><i class="bi bi-check-circle text-success me-2"></i>Taux de conversion (recherche de mots-clés : "conversion", "taux")</li>
+            </ul>
+          </div>
+          <div class="col-md-6">
+            <h6>Données de tableau extraites :</h6>
+            <ul class="list-unstyled">
+              <li><i class="bi bi-check-circle text-success me-2"></i>Last Minute % (recherche dans les colonnes)</li>
+              <li><i class="bi bi-check-circle text-success me-2"></i>Early Booking % (recherche dans les colonnes)</li>
+              <li><i class="bi bi-check-circle text-success me-2"></i>Répartition Juillet/Août/Septembre</li>
+            </ul>
+          </div>
+        </div>
+        <div class="alert alert-warning mt-3">
+          <small><i class="bi bi-lightbulb me-1"></i><strong>Conseil :</strong> Pour de meilleurs résultats, assurez-vous que vos slides contiennent des mots-clés clairs et des pourcentages bien formatés.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} 

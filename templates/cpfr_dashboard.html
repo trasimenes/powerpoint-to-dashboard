@@ -1,0 +1,557 @@
+{% extends 'base.html' %}
+{% block title %}CPFR Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12 d-flex justify-content-between align-items-center">
+    <div>
+      <h1 class="mb-0"><i class="bi bi-graph-up-arrow me-2"></i>CPFR Weekly Dashboard</h1>
+      <p class="text-muted mb-0">Collaborative Planning, Forecasting, and Replenishment</p>
+    </div>
+    <div>
+      <a href="/cpfr/upload" class="btn btn-primary me-2">
+        <i class="bi bi-upload me-1"></i>Upload PowerPoint
+      </a>
+      <a href="/cpfr/import" class="btn btn-outline-primary">
+        <i class="bi bi-plus-circle me-1"></i>Import Manuel
+      </a>
+    </div>
+  </div>
+  <hr class="mt-3">
+</div>
+
+<!-- Week Selector -->
+<div class="row mb-4">
+  <div class="col-md-4">
+    <label for="weekSelector" class="form-label">Semaine :</label>
+    <select id="weekSelector" class="form-select"></select>
+  </div>
+  <div class="col-md-8 d-flex align-items-end justify-content-end">
+    <span id="dashboard-loading" class="text-primary d-none"><span class="spinner-border spinner-border-sm"></span> Chargement...</span>
+    <span id="dashboard-error" class="text-danger d-none"></span>
+  </div>
+</div>
+
+<!-- KPI Cards -->
+<div id="kpiCardsRow" class="row mb-4"></div>
+
+<!-- Charts Row -->
+<div class="row">
+  <div class="col-lg-8 mb-4">
+    <div class="card">
+      <div class="card-header"><h5 class="card-title mb-0"><i class="bi bi-graph-up me-2"></i>Évolution des KPIs</h5></div>
+      <div class="card-body"><canvas id="kpiTrendChart" height="100"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4 mb-4">
+    <div class="card">
+      <div class="card-header"><h5 class="card-title mb-0"><i class="bi bi-pie-chart me-2"></i>Focus des Offres</h5></div>
+      <div class="card-body"><canvas id="offersFocusChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-6 mb-4">
+    <div class="card">
+      <div class="card-header"><h5 class="card-title mb-0"><i class="bi bi-calendar3 me-2"></i>Réservations par Mois</h5></div>
+      <div class="card-body"><canvas id="bookingsByMonthChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6 mb-4">
+    <div class="card">
+      <div class="card-header"><h5 class="card-title mb-0"><i class="bi bi-clock me-2"></i>Durée de Séjour</h5></div>
+      <div class="card-body"><canvas id="lengthOfStayChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12 mb-4">
+    <div class="card">
+      <div class="card-header"><h5 class="card-title mb-0"><i class="bi bi-funnel me-2"></i>Canaux d'Acquisition</h5></div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-lg-8"><canvas id="acquisitionChannelsChart" height="100"></canvas></div>
+          <div class="col-lg-4"><div class="accordion" id="channelsAccordion"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header"><h5 class="card-title mb-0"><i class="bi bi-table me-2"></i>Données Détaillées</h5></div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-striped" id="dataTable">
+            <thead><tr><th>Semaine</th><th>Sessions</th><th>Revenue B2C</th><th>Panier Moyen</th><th>Taux Conversion</th><th>Réservations</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+        <!-- Section Insights et Détails -->
+        <div class="row mt-4">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Insights de la Semaine</h5>
+              </div>
+              <div class="card-body">
+                <div id="insightsSection">
+                  <div class="text-center text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> Chargement des insights...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Détails des Réservations</h5>
+              </div>
+              <div class="card-body">
+                <div id="bookingDetailsSection">
+                  <div class="text-center text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> Chargement des détails...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section Meilleur Jour -->
+        <div class="row mt-4">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-star"></i> Meilleur Jour de la Semaine</h5>
+              </div>
+              <div class="card-body">
+                <div id="bestDaySection">
+                  <div class="text-center text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> Chargement des données du meilleur jour...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+<!-- Chart.js & DataTables -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css"/>
+
+<script>
+const API_BASE = '/api/v1';
+let weekList = [];
+let currentWeekId = null;
+let charts = {};
+
+function showLoading(show) {
+  document.getElementById('dashboard-loading').classList.toggle('d-none', !show);
+}
+function showError(msg) {
+  const el = document.getElementById('dashboard-error');
+  if (msg) {
+    el.textContent = msg;
+    el.classList.remove('d-none');
+  } else {
+    el.textContent = '';
+    el.classList.add('d-none');
+  }
+}
+
+async function fetchWeeks() {
+  const res = await fetch(`${API_BASE}/weeks`);
+  return await res.json();
+}
+
+async function fetchAllData(weekId) {
+  try {
+    const [summary, offers, bookings, acquisition, notes] = await Promise.all([
+      fetch(`${API_BASE}/summary/${weekId}`).then(r=>r.ok ? r.json() : null),
+      fetch(`${API_BASE}/offers/${weekId}`).then(r=>r.ok ? r.json() : null),
+      fetch(`${API_BASE}/bookings/${weekId}`).then(r=>r.ok ? r.json() : null),
+      fetch(`${API_BASE}/acquisition/${weekId}`).then(r=>r.ok ? r.json() : []),
+      fetch(`${API_BASE}/campaign-notes/${weekId}`).then(r=>r.ok ? r.json() : []),
+    ]);
+    return {summary, offers, bookings, acquisition, notes};
+  } catch (e) {
+    console.error('Error fetching data:', e);
+    return {summary: null, offers: null, bookings: null, acquisition: [], notes: []};
+  }
+}
+
+function formatInt(n) { return n ? n.toLocaleString('fr-FR') : '0'; }
+function formatCurrency(n) { return n ? `€${Math.round(n).toLocaleString('fr-FR')}` : '€0'; }
+function formatPercent(n, d=2) { return n!=null ? (n*100).toFixed(d)+'%' : '0%'; }
+function signBadge(val) {
+  if (val == null) return '';
+  let cls = val > 0 ? 'bg-success' : val < 0 ? 'bg-danger' : 'bg-secondary';
+  let icon = val > 0 ? '▲' : val < 0 ? '▼' : '●';
+  return `<span class="badge ${cls}">${icon} ${(val*100).toFixed(1)}%</span>`;
+}
+
+function renderKPICards(summary) {
+  const fields = [
+    {field:'sessions', label:'Sessions', format:formatInt, badge:'vs_ly_sessions'},
+    {field:'revenue_b2c', label:'Revenu B2C', format:formatCurrency, badge:'vs_ly_revenue'},
+    {field:'average_basket_value', label:'Panier Moyen', format:formatCurrency, badge:'vs_ly_abv'},
+    {field:'conversion_rate', label:'Conv. Rate', format:formatPercent, badge:'vs_ly_cr'},
+    {field:'nb_bookings', label:'Réservations', format:formatInt, badge:'vs_ly_bookings'},
+    {field:'best_day_sessions', label:'Meilleur Jour', format:formatInt, badge:null}
+  ];
+  let html = '';
+  fields.forEach(f => {
+    html += `<div class="col-md-2 mb-3"><div class="card text-center h-100"><div class="card-body">
+      <h4>${f.format(summary[f.field])}</h4>
+      <p class="card-title">${f.label}</p>`;
+    if (f.badge && summary[f.badge]!=null) {
+      html += signBadge(summary[f.badge]);
+    }
+    html += `</div></div></div>`;
+  });
+  document.getElementById('kpiCardsRow').innerHTML = html;
+  
+  // Ajouter une section pour les variations VS LW
+  let variationsHtml = '<div class="row mt-3"><div class="col-12"><h6>Variations vs Last Week:</h6><div class="row">';
+  const lwFields = [
+    {field:'vs_lw_sessions', label:'Sessions', format:formatPercent},
+    {field:'vs_lw_revenue', label:'Revenu', format:formatPercent},
+    {field:'vs_lw_abv', label:'Panier', format:formatPercent},
+    {field:'vs_lw_cr', label:'Conv. Rate', format:formatPercent},
+    {field:'vs_lw_bookings', label:'Réservations', format:formatPercent}
+  ];
+  lwFields.forEach(f => {
+    if (summary[f.field] != null) {
+      variationsHtml += `<div class="col-md-2 mb-2">
+        <div class="d-flex justify-content-between align-items-center">
+          <span>${f.label}:</span>
+          ${signBadge(summary[f.field])}
+        </div>
+      </div>`;
+    }
+  });
+  variationsHtml += '</div></div></div>';
+  
+  // Ajouter après les KPI cards
+  const kpiSection = document.getElementById('kpiCardsRow').parentElement;
+  const existingVariations = kpiSection.querySelector('.variations-section');
+  if (existingVariations) {
+    existingVariations.remove();
+  }
+  const variationsDiv = document.createElement('div');
+  variationsDiv.className = 'variations-section';
+  variationsDiv.innerHTML = variationsHtml;
+  kpiSection.appendChild(variationsDiv);
+}
+
+function renderDataTable(weekly) {
+  const tbody = document.querySelector('#dataTable tbody');
+  tbody.innerHTML = '';
+  
+  // Ensure weekly is an array
+  if (!Array.isArray(weekly) || weekly.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Aucune donnée disponible</td></tr>';
+    return;
+  }
+  
+  weekly.forEach(week => {
+    tbody.innerHTML += `<tr>
+      <td>${week.week_label||week.week_start_date}</td>
+      <td>${formatInt(week.sessions)}</td>
+      <td>${formatCurrency(week.revenue_b2c)}</td>
+      <td>${formatCurrency(week.average_basket_value)}</td>
+      <td>${formatPercent(week.conversion_rate)}</td>
+      <td>${formatInt(week.nb_bookings)}</td>
+      <td><button class="btn btn-sm btn-outline-primary" onclick="selectWeek('${week.id}')">Voir détails</button></td>
+    </tr>`;
+  });
+  if (!$.fn.DataTable.isDataTable('#dataTable')) {
+    $('#dataTable').DataTable({paging:true,searching:true});
+  }
+}
+
+function renderAccordion(acquisition) {
+  const acc = document.getElementById('channelsAccordion');
+  acc.innerHTML = '';
+  acquisition.forEach((ch, i) => {
+    acc.innerHTML += `<div class="accordion-item">
+      <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#channel${i}">${ch.channel_label||ch.channel_code}</button></h2>
+      <div id="channel${i}" class="accordion-collapse collapse" data-bs-parent="#channelsAccordion"><div class="accordion-body">
+        <div class="row"><div class="col-6">
+          <strong>Sessions:</strong> ${formatInt(ch.sessions)}<br>
+          <strong>Réservations:</strong> ${formatInt(ch.bookings)}<br>
+          <strong>Revenue:</strong> ${formatCurrency(ch.revenue)}
+        </div><div class="col-6">
+          <strong>Coûts:</strong> ${formatCurrency(ch.costs)}<br>
+          <strong>CVR vs LW:</strong> ${signBadge(ch.cvr_vs_lw)}<br>
+          <strong>CVR vs LY:</strong> ${signBadge(ch.cvr_vs_ly)}
+        </div></div>
+        ${ch.comments?`<hr><small class="text-muted">${ch.comments}</small>`:''}
+      </div></div>
+    </div>`;
+  });
+}
+
+function renderCharts(weekly, offers, bookings, acquisition) {
+  // Destroy old charts
+  Object.values(charts).forEach(c=>c.destroy&&c.destroy());
+  
+  // Ensure weekly is an array
+  if (!Array.isArray(weekly) || weekly.length === 0) {
+    console.warn('No weekly data available for charts');
+    return;
+  }
+  
+  // KPI Trend
+  const labels = weekly.map(d=>d.week_label||d.week_start_date).reverse();
+  charts.kpiTrend = new Chart(document.getElementById('kpiTrendChart').getContext('2d'), {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'Sessions',data:weekly.map(d=>d.sessions).reverse(),borderColor:'rgb(75,192,192)',tension:0.1},
+        {label:'Revenue (€)',data:weekly.map(d=>(d.revenue_b2c||0)).reverse(),borderColor:'rgb(255,99,132)',tension:0.1},
+        {label:'ABV (€)',data:weekly.map(d=>(d.average_basket_value||0)).reverse(),borderColor:'rgb(54,162,235)',tension:0.1},
+        {label:'CR (%)',data:weekly.map(d=>(d.conversion_rate||0)*100).reverse(),borderColor:'rgb(255,205,86)',tension:0.1},
+        {label:'Bookings',data:weekly.map(d=>d.nb_bookings).reverse(),borderColor:'rgb(75,0,130)',tension:0.1}
+      ]
+    },options:{responsive:true,plugins:{title:{display:true,text:'Évolution des KPIs'}}}
+  });
+  // Offers Mix
+  if (offers) {
+    charts.offersMix = new Chart(document.getElementById('offersFocusChart').getContext('2d'), {
+      type:'doughnut',
+      data:{
+        labels:['Last Minute','Early Booking +4m','Autres'],
+        datasets:[{data:[offers.last_minute_pct,offers.early_booking_pct,1-(offers.last_minute_pct||0)-(offers.early_booking_pct||0)],backgroundColor:['rgb(255,99,132)','rgb(54,162,235)','rgb(255,205,86)']}]
+      },options:{responsive:true,plugins:{legend:{position:'bottom'}}}
+    });
+  }
+  // Bookings by Month
+  if (bookings) {
+    charts.bookingsMonths = new Chart(document.getElementById('bookingsByMonthChart').getContext('2d'), {
+      type:'bar',
+      data:{
+        labels:['Juillet','Août','Septembre'],
+        datasets:[{label:'% Réservations',data:[bookings.month_july_pct,bookings.month_august_pct,bookings.month_sept_pct],backgroundColor:['rgba(255,99,132,0.2)','rgba(54,162,235,0.2)','rgba(255,205,86,0.2)'],borderColor:['rgb(255,99,132)','rgb(54,162,235)','rgb(255,205,86)'],borderWidth:1}]
+      },options:{responsive:true,scales:{y:{beginAtZero:true,max:1}}}
+    });
+    // Length of Stay
+    charts.lengthOfStay = new Chart(document.getElementById('lengthOfStayChart').getContext('2d'), {
+      type:'pie',
+      data:{
+        labels:['2 nuits','3 nuits','4 nuits+'],
+        datasets:[{data:[bookings.length_2n_pct,bookings.length_3n_pct,bookings.length_4n_pct],backgroundColor:['rgb(255,99,132)','rgb(54,162,235)','rgb(255,205,86)']}]
+      },options:{responsive:true,plugins:{legend:{position:'bottom'}}}
+    });
+  }
+  // Acquisition Channels
+  if (acquisition && acquisition.length) {
+    const group = {};
+    acquisition.forEach(ch=>{group[ch.channel_label||ch.channel_code]=(group[ch.channel_label||ch.channel_code]||0)+(ch.revenue||0)});
+    charts.acquisition = new Chart(document.getElementById('acquisitionChannelsChart').getContext('2d'), {
+      type:'bar',
+      data:{labels:Object.keys(group),datasets:[{label:'Revenue (€)',data:Object.values(group),backgroundColor:['rgba(255,99,132,0.2)','rgba(54,162,235,0.2)','rgba(255,205,86,0.2)','rgba(75,192,192,0.2)'],borderColor:['rgb(255,99,132)','rgb(54,162,235)','rgb(255,205,86)','rgb(75,192,192)'],borderWidth:1}]},
+      options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}}}
+    });
+  }
+}
+
+function renderInsights(notes) {
+  const section = document.getElementById('insightsSection');
+  if (!notes || notes.length === 0) {
+    section.innerHTML = '<p class="text-muted">Aucun insight disponible pour cette semaine.</p>';
+    return;
+  }
+  
+  let html = '';
+  notes.forEach((note, index) => {
+    html += `<div class="mb-3">
+      <div class="d-flex align-items-start">
+        <i class="fas fa-bullseye text-info me-2 mt-1"></i>
+        <div>
+          <p class="mb-1">${note.note_text || note}</p>
+          <small class="text-muted">Insight #${index + 1}</small>
+        </div>
+      </div>
+    </div>`;
+  });
+  section.innerHTML = html;
+}
+
+function renderBookingDetails(bookings) {
+  const section = document.getElementById('bookingDetailsSection');
+  if (!bookings) {
+    section.innerHTML = '<p class="text-muted">Aucun détail de réservation disponible.</p>';
+    return;
+  }
+  
+  let html = '<div class="row">';
+  
+  // Top dates booked
+  if (bookings.top_dates_booked && bookings.top_dates_booked.length > 0) {
+    html += `<div class="col-6 mb-3">
+      <h6><i class="fas fa-calendar-check text-success"></i> Top Dates Réservées</h6>
+      <ul class="list-unstyled">`;
+    bookings.top_dates_booked.forEach(date => {
+      html += `<li><small>${date}</small></li>`;
+    });
+    html += `</ul></div>`;
+  }
+  
+  // Top dates searched
+  if (bookings.top_dates_searched && bookings.top_dates_searched.length > 0) {
+    html += `<div class="col-6 mb-3">
+      <h6><i class="fas fa-search text-primary"></i> Top Dates Recherchées</h6>
+      <ul class="list-unstyled">`;
+    bookings.top_dates_searched.forEach(date => {
+      html += `<li><small>${date}</small></li>`;
+    });
+    html += `</ul></div>`;
+  }
+  
+  // Top parks
+  if (bookings.top_parks && bookings.top_parks.length > 0) {
+    html += `<div class="col-6 mb-3">
+      <h6><i class="fas fa-map-marker-alt text-warning"></i> Top Parcs</h6>
+      <ul class="list-unstyled">`;
+    bookings.top_parks.forEach(park => {
+      html += `<li><small>${park}</small></li>`;
+    });
+    html += `</ul></div>`;
+  }
+  
+  // Lengths of stay
+  if (bookings.lengths_of_stay && bookings.lengths_of_stay.length > 0) {
+    html += `<div class="col-6 mb-3">
+      <h6><i class="fas fa-bed text-info"></i> Durées de Séjour</h6>
+      <ul class="list-unstyled">`;
+    bookings.lengths_of_stay.forEach((stay, index) => {
+      if (index < 3) { // Limiter à 3
+        html += `<li><small>${stay[0]} nuits (${stay[1]}%)</small></li>`;
+      }
+    });
+    html += `</ul></div>`;
+  }
+  
+  html += '</div>';
+  section.innerHTML = html;
+}
+
+function renderBestDay(summary) {
+  const section = document.getElementById('bestDaySection');
+  if (!summary || !summary.best_day) {
+    section.innerHTML = '<p class="text-muted">Aucune information sur le meilleur jour disponible.</p>';
+    return;
+  }
+  
+  const html = `
+    <div class="row text-center">
+      <div class="col-md-4">
+        <div class="border-end">
+          <h4 class="text-success">${summary.best_day || 'N/A'}</h4>
+          <p class="text-muted mb-0">Meilleur Jour</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="border-end">
+          <h4 class="text-primary">${formatInt(summary.best_day_sessions)}</h4>
+          <p class="text-muted mb-0">Sessions</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <h4 class="text-warning">${formatCurrency(summary.best_day_revenue)}</h4>
+        <p class="text-muted mb-0">Revenue</p>
+      </div>
+    </div>
+  `;
+  section.innerHTML = html;
+}
+
+async function hydrateDashboard(weekId) {
+  if (!weekId) return;
+  
+  showLoading(true); showError();
+  try {
+    const {summary, offers, bookings, acquisition, notes} = await fetchAllData(weekId);
+    
+    if (!summary) {
+      showError('Aucune donnée disponible pour cette semaine');
+      return;
+    }
+    
+    renderKPICards(summary);
+    
+    // Fetch historical data for charts
+    const weeklyResponse = await fetch(`${API_BASE}/summary?limit=12`);
+    const weeklyData = weeklyResponse.ok ? await weeklyResponse.json() : [];
+    
+    // Ensure weeklyData is an array
+    if (Array.isArray(weeklyData)) {
+      renderCharts(weeklyData, offers, bookings, acquisition);
+      renderDataTable(weeklyData);
+      renderInsights(notes);
+      renderBookingDetails(bookings);
+      renderBestDay(summary);
+    } else {
+      console.warn('Weekly data is not an array:', weeklyData);
+      renderCharts([], offers, bookings, acquisition);
+      renderDataTable([]);
+      renderInsights([]);
+      renderBookingDetails(null);
+      renderBestDay(null);
+    }
+    
+    renderAccordion(acquisition || []);
+  } catch (e) {
+    console.error('Dashboard hydration error:', e);
+    showError('Erreur chargement des données: ' + e.message);
+  } finally {
+    showLoading(false);
+  }
+}
+
+function selectWeek(weekId) {
+  document.getElementById('weekSelector').value = weekId;
+  hydrateDashboard(weekId);
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  showLoading(true);
+  try {
+    weekList = await fetchWeeks();
+    const sel = document.getElementById('weekSelector');
+    
+    if (weekList.length === 0) {
+      sel.innerHTML = '<option value="">Aucune semaine disponible</option>';
+      showError('Aucune donnée disponible. Veuillez ajouter des données via la page d\'import.');
+      return;
+    }
+    
+    sel.innerHTML = weekList.map(w=>`<option value="${w.id}">${w.week_label} (${w.week_start_date})</option>`).join('');
+    currentWeekId = weekList[0].id;
+    sel.value = currentWeekId;
+    sel.addEventListener('change', e=>selectWeek(e.target.value));
+    hydrateDashboard(currentWeekId);
+  } catch (e) {
+    showError('Erreur chargement des semaines: ' + e.message);
+  } finally {
+    showLoading(false);
+  }
+});
+</script>
+{% endblock %} 

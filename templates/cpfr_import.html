@@ -1,0 +1,472 @@
+{% extends 'base.html' %}
+{% block title %}Import CPFR - Données{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="mb-0">
+        <i class="bi bi-upload me-2"></i>Import des données CPFR
+      </h2>
+      <a href="/cpfr" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left me-1"></i>Retour au Dashboard
+      </a>
+    </div>
+    <hr>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs" id="importTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="weekly-tab" data-bs-toggle="tab" data-bs-target="#weekly" type="button" role="tab">
+              <i class="bi bi-calendar-week me-1"></i>Résumé Hebdomadaire
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="offers-tab" data-bs-toggle="tab" data-bs-target="#offers" type="button" role="tab">
+              <i class="bi bi-gift me-1"></i>Focus des Offres
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="bookings-tab" data-bs-toggle="tab" data-bs-target="#bookings" type="button" role="tab">
+              <i class="bi bi-calendar-check me-1"></i>Détails Réservations
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="channels-tab" data-bs-toggle="tab" data-bs-target="#channels" type="button" role="tab">
+              <i class="bi bi-funnel me-1"></i>Canaux d'Acquisition
+            </button>
+          </li>
+        </ul>
+      </div>
+      <div class="card-body">
+        <div class="tab-content" id="importTabsContent">
+          
+          <!-- Résumé Hebdomadaire -->
+          <div class="tab-pane fade show active" id="weekly" role="tabpanel">
+            <form id="weeklyForm">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="week_start_date" class="form-label">Date de début de semaine *</label>
+                    <input type="date" class="form-control" id="week_start_date" name="week_start_date" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="sessions" class="form-label">Sessions</label>
+                    <input type="number" class="form-control" id="sessions" name="sessions">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="revenue_b2c" class="form-label">Revenue B2C (€)</label>
+                    <input type="number" step="0.01" class="form-control" id="revenue_b2c" name="revenue_b2c">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="average_basket_value" class="form-label">Panier Moyen (€)</label>
+                    <input type="number" step="0.01" class="form-control" id="average_basket_value" name="average_basket_value">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="conversion_rate" class="form-label">Taux de Conversion (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="conversion_rate" name="conversion_rate">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="nb_bookings" class="form-label">Nombre de Réservations</label>
+                    <input type="number" class="form-control" id="nb_bookings" name="nb_bookings">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="vs_ly_sessions" class="form-label">Sessions vs LY (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="vs_ly_sessions" name="vs_ly_sessions">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="vs_lw_sessions" class="form-label">Sessions vs LW (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="vs_lw_sessions" name="vs_lw_sessions">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="vs_ly_revenue" class="form-label">Revenue vs LY (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="vs_ly_revenue" name="vs_ly_revenue">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="vs_lw_revenue" class="form-label">Revenue vs LW (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="vs_lw_revenue" name="vs_lw_revenue">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="vs_ly_abv" class="form-label">Panier vs LY (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="vs_ly_abv" name="vs_ly_abv">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="vs_lw_abv" class="form-label">Panier vs LW (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="vs_lw_abv" name="vs_lw_abv">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="vs_ly_cr" class="form-label">Conversion vs LY (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="vs_ly_cr" name="vs_ly_cr">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="vs_lw_cr" class="form-label">Conversion vs LW (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="vs_lw_cr" name="vs_lw_cr">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="vs_ly_bookings" class="form-label">Réservations vs LY (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="vs_ly_bookings" name="vs_ly_bookings">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="vs_lw_bookings" class="form-label">Réservations vs LW (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="vs_lw_bookings" name="vs_lw_bookings">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="best_day_sessions" class="form-label">Meilleur Jour (Sessions)</label>
+                    <input type="number" class="form-control" id="best_day_sessions" name="best_day_sessions">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="best_day_revenue" class="form-label">Meilleur Jour (Revenue €)</label>
+                    <input type="number" step="0.01" class="form-control" id="best_day_revenue" name="best_day_revenue">
+                  </div>
+                </div>
+              </div>
+              
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save me-1"></i>Sauvegarder Résumé Hebdomadaire
+              </button>
+            </form>
+          </div>
+          
+          <!-- Focus des Offres -->
+          <div class="tab-pane fade" id="offers" role="tabpanel">
+            <form id="offersForm">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="offers_week_start_date" class="form-label">Date de début de semaine *</label>
+                    <input type="date" class="form-control" id="offers_week_start_date" name="week_start_date" required>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="last_minute_pct" class="form-label">Last Minute (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="last_minute_pct" name="last_minute_pct">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="early_booking_pct" class="form-label">Early Booking (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="early_booking_pct" name="early_booking_pct">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="summer_flash_revenue" class="form-label">Summer Flash Revenue (€)</label>
+                    <input type="number" step="0.01" class="form-control" id="summer_flash_revenue" name="summer_flash_revenue">
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="summer_flash_bookings" class="form-label">Summer Flash Bookings</label>
+                    <input type="number" class="form-control" id="summer_flash_bookings" name="summer_flash_bookings">
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="summer_flash_abv" class="form-label">Summer Flash ABV (€)</label>
+                    <input type="number" step="0.01" class="form-control" id="summer_flash_abv" name="summer_flash_abv">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="lead_gen_revenue" class="form-label">Lead Gen Revenue (€)</label>
+                    <input type="number" step="0.01" class="form-control" id="lead_gen_revenue" name="lead_gen_revenue">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="lead_gen_bookings" class="form-label">Lead Gen Bookings</label>
+                    <input type="number" class="form-control" id="lead_gen_bookings" name="lead_gen_bookings">
+                  </div>
+                </div>
+              </div>
+              
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save me-1"></i>Sauvegarder Focus des Offres
+              </button>
+            </form>
+          </div>
+          
+          <!-- Détails Réservations -->
+          <div class="tab-pane fade" id="bookings" role="tabpanel">
+            <form id="bookingsForm">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="bookings_week_start_date" class="form-label">Date de début de semaine *</label>
+                    <input type="date" class="form-control" id="bookings_week_start_date" name="week_start_date" required>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="month_july_pct" class="form-label">Juillet (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="month_july_pct" name="month_july_pct">
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="month_august_pct" class="form-label">Août (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="month_august_pct" name="month_august_pct">
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="month_sept_pct" class="form-label">Septembre (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="month_sept_pct" name="month_sept_pct">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="length_2n_pct" class="form-label">2 nuits (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="length_2n_pct" name="length_2n_pct">
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="length_3n_pct" class="form-label">3 nuits (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="length_3n_pct" name="length_3n_pct">
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="length_4n_pct" class="form-label">4 nuits (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="length_4n_pct" name="length_4n_pct">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="top_dates_booked" class="form-label">Top Dates Booked</label>
+                    <textarea class="form-control" id="top_dates_booked" name="top_dates_booked" rows="3" placeholder="Ex: 15/07, 22/07, 29/07"></textarea>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="top_dates_searched" class="form-label">Top Dates Searched</label>
+                    <textarea class="form-control" id="top_dates_searched" name="top_dates_searched" rows="3" placeholder="Ex: 15/07, 22/07, 29/07"></textarea>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="top_parks_booked" class="form-label">Top Parks Booked</label>
+                    <textarea class="form-control" id="top_parks_booked" name="top_parks_booked" rows="3" placeholder="Ex: Disneyland, Parc Astérix"></textarea>
+                  </div>
+                </div>
+              </div>
+              
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save me-1"></i>Sauvegarder Détails Réservations
+              </button>
+            </form>
+          </div>
+          
+          <!-- Canaux d'Acquisition -->
+          <div class="tab-pane fade" id="channels" role="tabpanel">
+            <form id="channelsForm">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="channels_week_start_date" class="form-label">Date de début de semaine *</label>
+                    <input type="date" class="form-control" id="channels_week_start_date" name="week_start_date" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="channel_name" class="form-label">Canal *</label>
+                    <select class="form-control" id="channel_name" name="channel_name" required>
+                      <option value="">Sélectionner un canal</option>
+                      <option value="SEA">SEA</option>
+                      <option value="SEO">SEO</option>
+                      <option value="OM">OM</option>
+                      <option value="CRM">CRM</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="channel_sessions" class="form-label">Sessions</label>
+                    <input type="number" class="form-control" id="channel_sessions" name="sessions">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="channel_bookings" class="form-label">Réservations</label>
+                    <input type="number" class="form-control" id="channel_bookings" name="bookings">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="channel_revenue" class="form-label">Revenue (€)</label>
+                    <input type="number" step="0.01" class="form-control" id="channel_revenue" name="revenue">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="channel_costs" class="form-label">Coûts (€)</label>
+                    <input type="number" step="0.01" class="form-control" id="channel_costs" name="costs">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="cvr_vs_lw" class="form-label">CVR vs LW (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="cvr_vs_lw" name="cvr_vs_lw">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="cvr_vs_ly" class="form-label">CVR vs LY (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="cvr_vs_ly" name="cvr_vs_ly">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-12">
+                  <div class="mb-3">
+                    <label for="channel_comments" class="form-label">Commentaires</label>
+                    <textarea class="form-control" id="channel_comments" name="comments" rows="3" placeholder="Notes et observations sur ce canal..."></textarea>
+                  </div>
+                </div>
+              </div>
+              
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save me-1"></i>Sauvegarder Canal d'Acquisition
+              </button>
+            </form>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Gestion des formulaires
+document.addEventListener('DOMContentLoaded', function() {
+  const forms = ['weeklyForm', 'offersForm', 'bookingsForm', 'channelsForm'];
+  
+  forms.forEach(formId => {
+    const form = document.getElementById(formId);
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Ajouter le type de données
+        if (formId === 'weeklyForm') {
+          data.type = 'weekly_summary';
+        } else if (formId === 'offersForm') {
+          data.type = 'offers_focus';
+        } else if (formId === 'bookingsForm') {
+          data.type = 'bookings_details';
+        } else if (formId === 'channelsForm') {
+          data.type = 'acquisition_channel';
+        }
+        
+        // Envoyer les données
+        fetch('/cpfr/data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.message) {
+            alert('Données sauvegardées avec succès !');
+            form.reset();
+          } else {
+            alert('Erreur : ' + data.error);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Erreur lors de la sauvegarde');
+        });
+      });
+    }
+  });
+});
+</script>
+{% endblock %} 
