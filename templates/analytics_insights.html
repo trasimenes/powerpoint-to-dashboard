@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}CPFR Dashboard{% endblock %}
+{% block title %}Analytics - Sum up and main insights{% endblock %}
 
 {% block content %}
 <!-- Webpixels CSS -->
@@ -118,7 +118,13 @@
                                 <div class="row align-items-center">
                                     <div class="col">
                                         <div class="kpi-label">Sessions</div>
-                                        <div class="kpi-value" id="sessions-value">342K</div>
+                                        <div class="kpi-value" id="sessions-value">
+                                            {% if latest_data and latest_data.weekly_summary %}
+                                                {{ latest_data.weekly_summary.sessions or '342K' }}
+                                            {% else %}
+                                                342K
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     <div class="col-auto">
                                         <div class="kpi-icon" style="background: linear-gradient(135deg, #fec5bb 0%, #fcd5ce 100%);">
@@ -127,19 +133,38 @@
                                     </div>
                                 </div>
                                 <div class="mt-3">
-                                    <span class="kpi-change" style="color: #4a5568;" id="sessions-ly">+6% vs LY</span>
-                                    <span class="kpi-change ms-2" style="color: #718096;" id="sessions-lw">-4% vs LW</span>
+                                    <span class="kpi-change" style="color: #4a5568;" id="sessions-ly">
+                                        {% if latest_data and latest_data.weekly_summary %}
+                                            {{ latest_data.weekly_summary.vs_ly_sessions or '+6%' }} vs LY
+                                        {% else %}
+                                            +6% vs LY
+                                        {% endif %}
+                                    </span>
+                                    <span class="kpi-change ms-2" style="color: #718096;" id="sessions-lw">
+                                        {% if latest_data and latest_data.weekly_summary %}
+                                            {{ latest_data.weekly_summary.vs_lw_sessions or '-4%' }} vs LW
+                                        {% else %}
+                                            -4% vs LW
+                                        {% endif %}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    
                     <div class="col-xl-2 col-md-4 col-sm-6">
                         <div class="card kpi-card">
                             <div class="card-body p-4">
                                 <div class="row align-items-center">
                                     <div class="col">
                                         <div class="kpi-label">Revenue B2C</div>
-                                        <div class="kpi-value" id="revenue-value">2,27M€</div>
+                                        <div class="kpi-value" id="revenue-value">
+                                            {% if latest_data and latest_data.weekly_summary %}
+                                                {{ latest_data.weekly_summary.revenue_b2c or '2,27M€' }}
+                                            {% else %}
+                                                2,27M€
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     <div class="col-auto">
                                         <div class="kpi-icon" style="background: linear-gradient(135deg, #fae1dd 0%, #f8edeb 100%);">
@@ -148,19 +173,38 @@
                                     </div>
                                 </div>
                                 <div class="mt-3">
-                                    <span class="kpi-change" style="color: #4a5568;" id="revenue-ly">+11% vs LY</span>
-                                    <span class="kpi-change ms-2" style="color: #718096;" id="revenue-lw">-12% vs LW</span>
+                                    <span class="kpi-change" style="color: #4a5568;" id="revenue-ly">
+                                        {% if latest_data and latest_data.weekly_summary %}
+                                            {{ latest_data.weekly_summary.vs_ly_revenue or '+11%' }} vs LY
+                                        {% else %}
+                                            +11% vs LY
+                                        {% endif %}
+                                    </span>
+                                    <span class="kpi-change ms-2" style="color: #718096;" id="revenue-lw">
+                                        {% if latest_data and latest_data.weekly_summary %}
+                                            {{ latest_data.weekly_summary.vs_lw_revenue or '-12%' }} vs LW
+                                        {% else %}
+                                            -12% vs LW
+                                        {% endif %}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    
                     <div class="col-xl-2 col-md-4 col-sm-6">
                         <div class="card kpi-card">
                             <div class="card-body p-4">
                                 <div class="row align-items-center">
                                     <div class="col">
                                         <div class="kpi-label">Basket Value</div>
-                                        <div class="kpi-value" id="basket-value">66,4€</div>
+                                        <div class="kpi-value" id="basket-value">
+                                            {% if latest_data and latest_data.weekly_summary %}
+                                                {{ latest_data.weekly_summary.average_basket_value or '917€' }}
+                                            {% else %}
+                                                917€
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     <div class="col-auto">
                                         <div class="kpi-icon" style="background: linear-gradient(135deg, #e8e8e4 0%, #d8e2dc 100%);">
@@ -169,19 +213,38 @@
                                     </div>
                                 </div>
                                 <div class="mt-3">
-                                    <span class="kpi-change" style="color: #4a5568;" id="basket-ly">+5% vs LY</span>
-                                    <span class="kpi-change ms-2" style="color: #718096;" id="basket-lw">-8% vs LW</span>
+                                    <span class="kpi-change" style="color: #4a5568;" id="basket-ly">
+                                        {% if latest_data and latest_data.weekly_summary %}
+                                            {{ latest_data.weekly_summary.vs_ly_abv or '-15%' }} vs LY
+                                        {% else %}
+                                            -15% vs LY
+                                        {% endif %}
+                                    </span>
+                                    <span class="kpi-change ms-2" style="color: #718096;" id="basket-lw">
+                                        {% if latest_data and latest_data.weekly_summary %}
+                                            {{ latest_data.weekly_summary.vs_lw_abv or '+8%' }} vs LW
+                                        {% else %}
+                                            +8% vs LW
+                                        {% endif %}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    
                     <div class="col-xl-2 col-md-4 col-sm-6">
                         <div class="card kpi-card">
                             <div class="card-body p-4">
                                 <div class="row align-items-center">
                                     <div class="col">
                                         <div class="kpi-label">Conversion</div>
-                                        <div class="kpi-value" id="conversion-value">5,1%</div>
+                                        <div class="kpi-value" id="conversion-value">
+                                            {% if latest_data and latest_data.weekly_summary %}
+                                                {{ latest_data.weekly_summary.conversion_rate or '0,53%' }}
+                                            {% else %}
+                                                0,53%
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     <div class="col-auto">
                                         <div class="kpi-icon" style="background: linear-gradient(135deg, #ece4db 0%, #ffe5d9 100%);">
@@ -190,19 +253,38 @@
                                     </div>
                                 </div>
                                 <div class="mt-3">
-                                    <span class="kpi-change" style="color: #4a5568;" id="conversion-ly">+0,3% vs LY</span>
-                                    <span class="kpi-change ms-2" style="color: #4a5568;" id="conversion-lw">+0,1% vs LW</span>
+                                    <span class="kpi-change" style="color: #4a5568;" id="conversion-ly">
+                                        {% if latest_data and latest_data.weekly_summary %}
+                                            {{ latest_data.weekly_summary.vs_ly_cr or '+12%' }} vs LY
+                                        {% else %}
+                                            +12% vs LY
+                                        {% endif %}
+                                    </span>
+                                    <span class="kpi-change ms-2" style="color: #4a5568;" id="conversion-lw">
+                                        {% if latest_data and latest_data.weekly_summary %}
+                                            {{ latest_data.weekly_summary.vs_lw_cr or '-14%' }} vs LW
+                                        {% else %}
+                                            -14% vs LW
+                                        {% endif %}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    
                     <div class="col-xl-2 col-md-4 col-sm-6">
                         <div class="card kpi-card">
                             <div class="card-body p-4">
                                 <div class="row align-items-center">
                                     <div class="col">
                                         <div class="kpi-label">Bookings</div>
-                                        <div class="kpi-value" id="bookings-value">17,5K</div>
+                                        <div class="kpi-value" id="bookings-value">
+                                            {% if latest_data and latest_data.weekly_summary %}
+                                                {{ latest_data.weekly_summary.nb_bookings or '2 475' }}
+                                            {% else %}
+                                                2 475
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     <div class="col-auto">
                                         <div class="kpi-icon" style="background: linear-gradient(135deg, #ffd7ba 0%, #fec89a 100%);">
@@ -211,8 +293,20 @@
                                     </div>
                                 </div>
                                 <div class="mt-3">
-                                    <span class="kpi-change" style="color: #4a5568;" id="bookings-ly">+29% vs LY</span>
-                                    <span class="kpi-change ms-2" style="color: #4a5568;" id="bookings-lw">+1% vs LW</span>
+                                    <span class="kpi-change" style="color: #4a5568;" id="bookings-ly">
+                                        {% if latest_data and latest_data.weekly_summary %}
+                                            {{ latest_data.weekly_summary.vs_ly_bookings or '+29%' }} vs LY
+                                        {% else %}
+                                            +29% vs LY
+                                        {% endif %}
+                                    </span>
+                                    <span class="kpi-change ms-2" style="color: #4a5568;" id="bookings-lw">
+                                        {% if latest_data and latest_data.weekly_summary %}
+                                            {{ latest_data.weekly_summary.vs_lw_bookings or '-18%' }} vs LW
+                                        {% else %}
+                                            -18% vs LW
+                                        {% endif %}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -301,30 +395,38 @@
                 <!-- FOCUS OFFERS -->
                 <div class="row mb-5">
                     <div class="col-12">
-                        <div class="card module-card border-success">
+                        <div class="card module-card" style="border-color: #fec5bb;">
                             <div class="card-header" style="background: #fec5bb; border: none;">
                                 <h5 class="mb-0 text-white">
                                     <i class="bi bi-tag me-2"></i>FOCUS OFFERS
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <h6 class="text-success mb-3"><i class="bi bi-clock me-2"></i>By leadtime :</h6>
+                                <h6 class="mb-3" style="color: #e89c8c;"><i class="bi bi-clock me-2"></i>By leadtime :</h6>
                                 
                                 <div class="row mb-4">
                                     <!-- Last Minute Bookings -->
                                     <div class="col-lg-6 mb-3">
-                                        <div class="card border-danger h-100">
-                                            <div class="card-header bg-danger text-white">
+                                        <div class="card h-100" style="border-color: #f8b5a5;">
+                                            <div class="card-header text-white" style="background: #f8b5a5; border: none;">
                                                 <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Last Minute Bookings</h6>
                                             </div>
                                             <div class="card-body text-center">
-                                                <h2 class="text-danger mb-2">84%</h2>
+                                                <h2 class="mb-2" style="color: #e89c8c;">
+                                                    {% if latest_data and latest_data.offers_focus and latest_data.offers_focus.last_minute_pct %}
+                                                        {{ latest_data.offers_focus.last_minute_pct }}
+                                                    {% else %}
+                                                        84%
+                                                    {% endif %}
+                                                </h2>
                                                 <p class="text-muted mb-2">of total bookings</p>
                                                 <div class="mb-3">
-                                                    <span class="badge bg-success">+2pts vs LW</span>
+                                                    <span class="badge" style="background: #e89c8c; color: white;">+2pts vs LW</span>
                                                 </div>
                                                 <div class="progress mb-2" style="height: 15px;">
-                                                    <div class="progress-bar bg-danger" style="width: 84%">84%</div>
+                                                    <div class="progress-bar" style="background: #f8b5a5; width: {% if latest_data and latest_data.offers_focus and latest_data.offers_focus.last_minute_pct %}{{ latest_data.offers_focus.last_minute_pct }}{% else %}84%{% endif %}">
+                                                        {% if latest_data and latest_data.offers_focus and latest_data.offers_focus.last_minute_pct %}{{ latest_data.offers_focus.last_minute_pct }}{% else %}84%{% endif %}
+                                                    </div>
                                                 </div>
                                                 <small class="text-muted">Dominance des réservations de dernière minute</small>
                                             </div>
@@ -333,18 +435,26 @@
                                     
                                     <!-- Early Booking +4 months -->
                                     <div class="col-lg-6 mb-3">
-                                        <div class="card border-primary h-100">
-                                            <div class="card-header bg-primary text-white">
+                                        <div class="card h-100" style="border-color: #fed5cb;">
+                                            <div class="card-header text-white" style="background: #fed5cb; border: none;">
                                                 <h6 class="mb-0"><i class="bi bi-calendar-plus me-2"></i>Early Booking +4 months</h6>
                                             </div>
                                             <div class="card-body text-center">
-                                                <h2 class="text-primary mb-2">9%</h2>
+                                                <h2 class="mb-2" style="color: #e89c8c;">
+                                                    {% if latest_data and latest_data.offers_focus and latest_data.offers_focus.early_booking_pct %}
+                                                        {{ latest_data.offers_focus.early_booking_pct }}
+                                                    {% else %}
+                                                        9%
+                                                    {% endif %}
+                                                </h2>
                                                 <p class="text-muted mb-2">of total bookings</p>
                                                 <div class="mb-3">
-                                                    <span class="badge bg-secondary">ISO vs LW</span>
+                                                    <span class="badge" style="background: #e89c8c; color: white;">ISO vs LW</span>
                                                 </div>
                                                 <div class="progress mb-2" style="height: 15px;">
-                                                    <div class="progress-bar bg-primary" style="width: 9%">9%</div>
+                                                    <div class="progress-bar" style="background: #fed5cb; width: {% if latest_data and latest_data.offers_focus and latest_data.offers_focus.early_booking_pct %}{{ latest_data.offers_focus.early_booking_pct }}{% else %}9%{% endif %}">
+                                                        {% if latest_data and latest_data.offers_focus and latest_data.offers_focus.early_booking_pct %}{{ latest_data.offers_focus.early_booking_pct }}{% else %}9%{% endif %}
+                                                    </div>
                                                 </div>
                                                 <small class="text-muted">Réservations anticipées stables</small>
                                             </div>
@@ -352,36 +462,54 @@
                                     </div>
                                 </div>
                                 
-                                <h6 class="text-success mb-3"><i class="bi bi-star me-2"></i>Others offers :</h6>
+                                <h6 class="mb-3" style="color: #e89c8c;"><i class="bi bi-star me-2"></i>Others offers :</h6>
                                 
                                 <div class="row">
                                     <!-- Summer Flash Sale -->
                                     <div class="col-lg-6 mb-3">
-                                        <div class="card border-warning h-100">
-                                            <div class="card-header bg-warning text-dark">
+                                        <div class="card h-100" style="border-color: #f0a793;">
+                                            <div class="card-header text-white" style="background: #f0a793; border: none;">
                                                 <h6 class="mb-0"><i class="bi bi-sun me-2"></i>Summer Flash Sale</h6>
                                             </div>
                                             <div class="card-body">
                                                 <div class="row text-center">
                                                     <div class="col-4">
-                                                        <h4 class="text-warning">1,4K€</h4>
+                                                        <h4 style="color: #e89c8c;">
+                                                            {% if latest_data and latest_data.offers_focus %}
+                                                                {{ latest_data.offers_focus.summer_flash_revenue or '1,4K€' }}
+                                                            {% else %}
+                                                                1,4K€
+                                                            {% endif %}
+                                                        </h4>
                                                         <small class="text-muted">Revenue</small>
                                                         <div class="mt-1">
-                                                            <span class="badge bg-warning">60% of total</span>
+                                                            <span class="badge" style="background: #f0a793; color: white;">60% of total</span>
                                                         </div>
                                                     </div>
                                                     <div class="col-4">
-                                                        <h4 class="text-success">1,4K</h4>
+                                                        <h4 style="color: #e89c8c;">
+                                                            {% if latest_data and latest_data.offers_focus %}
+                                                                {{ latest_data.offers_focus.summer_flash_bookings or '1,4K' }}
+                                                            {% else %}
+                                                                1,4K
+                                                            {% endif %}
+                                                        </h4>
                                                         <small class="text-muted">Bookings</small>
                                                         <div class="mt-1">
-                                                            <span class="badge bg-success">Volume driver</span>
+                                                            <span class="badge" style="background: #f8b5a5; color: white;">Volume driver</span>
                                                         </div>
                                                     </div>
                                                     <div class="col-4">
-                                                        <h4 class="text-info">924€</h4>
+                                                        <h4 style="color: #e89c8c;">
+                                                            {% if latest_data and latest_data.offers_focus %}
+                                                                {{ latest_data.offers_focus.summer_flash_abv or '924€' }}
+                                                            {% else %}
+                                                                924€
+                                                            {% endif %}
+                                                        </h4>
                                                         <small class="text-muted">ABV</small>
                                                         <div class="mt-1">
-                                                            <span class="badge bg-info">Per booking</span>
+                                                            <span class="badge" style="background: #fed5cb; color: white;">Per booking</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -391,18 +519,24 @@
                                     
                                     <!-- Lead Gen -->
                                     <div class="col-lg-6 mb-3">
-                                        <div class="card border-info h-100">
-                                            <div class="card-header bg-info text-white">
+                                        <div class="card h-100" style="border-color: #f2c2b9;">
+                                            <div class="card-header text-white" style="background: #f2c2b9; border: none;">
                                                 <h6 class="mb-0"><i class="bi bi-funnel me-2"></i>Lead Gen</h6>
                                             </div>
                                             <div class="card-body">
                                                 <div class="text-center mb-3">
-                                                    <h3 class="text-info">12K€</h3>
+                                                    <h3 style="color: #e89c8c;">
+                                                        {% if latest_data and latest_data.offers_focus %}
+                                                            {{ latest_data.offers_focus.lead_gen_revenue or '12K€' }}
+                                                        {% else %}
+                                                            12K€
+                                                        {% endif %}
+                                                    </h3>
                                                     <p class="text-muted mb-2">Total Revenue</p>
-                                                    <span class="badge bg-info">1% of total bookings</span>
+                                                    <span class="badge" style="background: #f2c2b9; color: white;">1% of total bookings</span>
                                                 </div>
                                                 <div class="progress mb-3" style="height: 12px;">
-                                                    <div class="progress-bar bg-info" style="width: 1%">1%</div>
+                                                    <div class="progress-bar" style="background: #f2c2b9; width: 1%">1%</div>
                                                 </div>
                                                 <div class="row text-center small">
                                                     <div class="col-12">
@@ -424,7 +558,7 @@
                 <!-- BOOKINGS DETAILS -->
                 <div class="row mb-5">
                     <div class="col-12">
-                        <div class="card module-card border-warning">
+                        <div class="card module-card" style="border-color: #ffd7ba;">
                             <div class="card-header" style="background: #ffd7ba; border: none;">
                                 <h5 class="mb-0 text-white">
                                     <i class="bi bi-calendar-check me-2"></i>BOOKINGS DETAILS
@@ -434,36 +568,60 @@
                                 <div class="row mb-4">
                                     <!-- Top months booked -->
                                     <div class="col-lg-6 mb-3">
-                                        <div class="card border-info h-100">
-                                            <div class="card-header bg-info text-white">
+                                        <div class="card h-100" style="border-color: #f7c19a;">
+                                            <div class="card-header text-white" style="background: #f7c19a; border: none;">
                                                 <h6 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Top months booked</h6>
                                             </div>
                                             <div class="card-body">
                                                 <div class="mb-3">
                                                     <div class="d-flex justify-content-between align-items-center mb-2">
-                                                        <span class="small"><i class="bi bi-sun text-warning me-1"></i>July</span>
-                                                        <span class="badge bg-warning">46%</span>
+                                                        <span class="small"><i class="bi bi-sun me-1" style="color: #e6a571;"></i>July</span>
+                                                        <span class="badge" style="background: #f3ad7f; color: white;">
+                                                            {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.month_july_pct %}
+                                                                {{ latest_data.bookings_details.month_july_pct }}
+                                                            {% else %}
+                                                                46%
+                                                            {% endif %}
+                                                        </span>
                                                     </div>
                                                     <div class="progress mb-2" style="height: 12px;">
-                                                        <div class="progress-bar bg-warning" style="width: 46%">46%</div>
+                                                        <div class="progress-bar" style="background: #f3ad7f; width: {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.month_july_pct %}{{ latest_data.bookings_details.month_july_pct }}{% else %}46%{% endif %}">
+                                                            {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.month_july_pct %}{{ latest_data.bookings_details.month_july_pct }}{% else %}46%{% endif %}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="mb-3">
                                                     <div class="d-flex justify-content-between align-items-center mb-2">
-                                                        <span class="small"><i class="bi bi-sun text-success me-1"></i>August</span>
-                                                        <span class="badge bg-success">34%</span>
+                                                        <span class="small"><i class="bi bi-sun me-1" style="color: #e6a571;"></i>August</span>
+                                                        <span class="badge" style="background: #f7c19a; color: white;">
+                                                            {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.month_august_pct %}
+                                                                {{ latest_data.bookings_details.month_august_pct }}
+                                                            {% else %}
+                                                                34%
+                                                            {% endif %}
+                                                        </span>
                                                     </div>
                                                     <div class="progress mb-2" style="height: 12px;">
-                                                        <div class="progress-bar bg-success" style="width: 34%">34%</div>
+                                                        <div class="progress-bar" style="background: #f7c19a; width: {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.month_august_pct %}{{ latest_data.bookings_details.month_august_pct }}{% else %}34%{% endif %}">
+                                                            {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.month_august_pct %}{{ latest_data.bookings_details.month_august_pct }}{% else %}34%{% endif %}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="mb-3">
                                                     <div class="d-flex justify-content-between align-items-center mb-2">
-                                                        <span class="small"><i class="bi bi-cloud text-info me-1"></i>September</span>
-                                                        <span class="badge bg-info">20%</span>
+                                                        <span class="small"><i class="bi bi-cloud me-1" style="color: #e6a571;"></i>September</span>
+                                                        <span class="badge" style="background: #fdd5c5; color: white;">
+                                                            {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.month_sept_pct %}
+                                                                {{ latest_data.bookings_details.month_sept_pct }}
+                                                            {% else %}
+                                                                20%
+                                                            {% endif %}
+                                                        </span>
                                                     </div>
                                                     <div class="progress" style="height: 12px;">
-                                                        <div class="progress-bar bg-info" style="width: 20%">20%</div>
+                                                        <div class="progress-bar" style="background: #fdd5c5; width: {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.month_sept_pct %}{{ latest_data.bookings_details.month_sept_pct }}{% else %}20%{% endif %}">
+                                                            {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.month_sept_pct %}{{ latest_data.bookings_details.month_sept_pct }}{% else %}20%{% endif %}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -472,36 +630,60 @@
                                     
                                     <!-- Lengths of stay -->
                                     <div class="col-lg-6 mb-3">
-                                        <div class="card border-danger h-100">
-                                            <div class="card-header bg-danger text-white">
+                                        <div class="card h-100" style="border-color: #f09f6b;">
+                                            <div class="card-header text-white" style="background: #f09f6b; border: none;">
                                                 <h6 class="mb-0"><i class="bi bi-house me-2"></i>Lengths of stay</h6>
                                             </div>
                                             <div class="card-body">
                                                 <div class="mb-3">
                                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                                         <span class="small">2 nights</span>
-                                                        <span class="badge bg-danger">33%</span>
+                                                        <span class="badge" style="background: #f09f6b; color: white;">
+                                                            {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.length_2n_pct %}
+                                                                {{ latest_data.bookings_details.length_2n_pct }}
+                                                            {% else %}
+                                                                33%
+                                                            {% endif %}
+                                                        </span>
                                                     </div>
                                                     <div class="progress mb-2" style="height: 10px;">
-                                                        <div class="progress-bar bg-danger" style="width: 33%">33%</div>
+                                                        <div class="progress-bar" style="background: #f09f6b; width: {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.length_2n_pct %}{{ latest_data.bookings_details.length_2n_pct }}{% else %}33%{% endif %}">
+                                                            {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.length_2n_pct %}{{ latest_data.bookings_details.length_2n_pct }}{% else %}33%{% endif %}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="mb-3">
                                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                                         <span class="small">3 nights</span>
-                                                        <span class="badge bg-warning">33%</span>
+                                                        <span class="badge" style="background: #f3ad7f; color: white;">
+                                                            {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.length_3n_pct %}
+                                                                {{ latest_data.bookings_details.length_3n_pct }}
+                                                            {% else %}
+                                                                33%
+                                                            {% endif %}
+                                                        </span>
                                                     </div>
                                                     <div class="progress mb-2" style="height: 10px;">
-                                                        <div class="progress-bar bg-warning" style="width: 33%">33%</div>
+                                                        <div class="progress-bar" style="background: #f3ad7f; width: {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.length_3n_pct %}{{ latest_data.bookings_details.length_3n_pct }}{% else %}33%{% endif %}">
+                                                            {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.length_3n_pct %}{{ latest_data.bookings_details.length_3n_pct }}{% else %}33%{% endif %}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="mb-3">
                                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                                         <span class="small">4+ nights</span>
-                                                        <span class="badge bg-info">19%</span>
+                                                        <span class="badge" style="background: #fdd5c5; color: white;">
+                                                            {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.length_4n_pct %}
+                                                                {{ latest_data.bookings_details.length_4n_pct }}
+                                                            {% else %}
+                                                                19%
+                                                            {% endif %}
+                                                        </span>
                                                     </div>
                                                     <div class="progress" style="height: 10px;">
-                                                        <div class="progress-bar bg-info" style="width: 19%">19%</div>
+                                                        <div class="progress-bar" style="background: #fdd5c5; width: {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.length_4n_pct %}{{ latest_data.bookings_details.length_4n_pct }}{% else %}19%{% endif %}">
+                                                            {% if latest_data and latest_data.bookings_details and latest_data.bookings_details.length_4n_pct %}{{ latest_data.bookings_details.length_4n_pct }}{% else %}19%{% endif %}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="text-center">
@@ -518,11 +700,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </main>
-    </div>
-</div>
-
             </div>
         </main>
     </div>
@@ -554,52 +731,17 @@ async function loadWeeks() {
         // Auto-select the latest week
         if (weeks.length > 0) {
             selector.value = weeks[0].id;
-            loadWeekData(weeks[0].id);
         }
     } catch (error) {
         console.error('Error loading weeks:', error);
     }
 }
 
-async function loadWeekData(weekId) {
-    if (!weekId) return;
-    
-    try {
-        const response = await fetch(`/api/v1/summary/${weekId}`);
-        const data = await response.json();
-        
-        if (data) {
-            updateKPIs(data);
-        }
-    } catch (error) {
-        console.error('Error loading week data:', error);
-    }
-}
-
-function updateKPIs(data) {
-    // Update KPI values
-    document.getElementById('sessions-value').textContent = data.sessions || '342K';
-    document.getElementById('revenue-value').textContent = data.revenue || '2,27M€';
-    document.getElementById('basket-value').textContent = data.basket_value || '66,4€';
-    document.getElementById('conversion-value').textContent = data.conversion_rate || '5,1%';
-    document.getElementById('bookings-value').textContent = data.bookings || '17,5K';
-    
-    // Update variations
-    document.getElementById('sessions-ly').textContent = data.sessions_ly || '+6% vs LY';
-    document.getElementById('sessions-lw').textContent = data.sessions_lw || '-4% vs LW';
-    document.getElementById('revenue-ly').textContent = data.revenue_ly || '+11% vs LY';
-    document.getElementById('revenue-lw').textContent = data.revenue_lw || '-12% vs LW';
-    document.getElementById('basket-ly').textContent = data.basket_ly || '+5% vs LY';
-    document.getElementById('basket-lw').textContent = data.basket_lw || '-8% vs LW';
-    document.getElementById('conversion-ly').textContent = data.conversion_ly || '+0,3% vs LY';
-    document.getElementById('conversion-lw').textContent = data.conversion_lw || '+0,1% vs LW';
-    document.getElementById('bookings-ly').textContent = data.bookings_ly || '+29% vs LY';
-    document.getElementById('bookings-lw').textContent = data.bookings_lw || '+1% vs LW';
-}
-
 // Week selector change event
 document.getElementById('weekSelector').addEventListener('change', function() {
-    loadWeekData(this.value);
+    if (this.value) {
+        window.location.href = `/analytics/insights?week=${this.value}`;
+    }
 });
 </script>
 

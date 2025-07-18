@@ -171,6 +171,20 @@ def init_db():
             )
         """)
         
+        # Table pour les documents collaboratifs (Yjs)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS collaborative_documents (
+                doc_id TEXT PRIMARY KEY,
+                document_type TEXT NOT NULL DEFAULT 'data-history',
+                state BLOB,
+                metadata TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                last_accessed DATETIME DEFAULT CURRENT_TIMESTAMP,
+                version INTEGER DEFAULT 1
+            )
+        """)
+        
         # Indexes
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_weekly_summary_week ON weekly_summary(week_id)")
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_offers_focus_week ON offers_focus(week_id)")
@@ -698,60 +712,149 @@ def get_campaign_notes(week_start_date: str = None) -> List[Dict[str, Any]]:
         return []
 
 
+def format_kpi_value(value, metric_type):
+    """Formate une valeur KPI selon son type"""
+    if value is None or value == 0:
+        return None
+    
+    if metric_type == 'sessions':
+        if value >= 1000:
+            return f"{value/1000:.0f}K"
+        else:
+            return str(int(value))
+    elif metric_type == 'revenue':
+        if value >= 1000000:
+            return f"{value/1000000:.2f}M€"
+        elif value >= 1000:
+            return f"{value/1000:.0f}K€"
+        else:
+            return f"{value:.0f}€"
+    elif metric_type == 'basket_value':
+        return f"{value:.0f}€"
+    elif metric_type == 'conversion_rate':
+        return f"{value*100:.2f}%"
+    elif metric_type == 'bookings':
+        if value >= 1000:
+            return f"{value:,}".replace(',', ' ')
+        else:
+            return str(int(value))
+    elif metric_type == 'percentage':
+        if value == 0:
+            return None
+        sign = '+' if value > 0 else ''
+        return f"{sign}{value*100:.0f}%"
+    else:
+        return str(value) if value is not None else None
+
+
 def get_latest_weekly_data() -> Dict[str, Any]:
     """Récupère les données de la semaine la plus récente"""
     try:
         with sqlite3.connect(DB_PATH) as conn:
             # Résumé hebdomadaire
-            weekly = conn.execute("""
+            weekly_cursor = conn.execute("""
                 SELECT w.week_label, w.week_start_date, ws.*
                 FROM weekly_summary ws
                 JOIN dim_week w ON ws.week_id = w.id
                 ORDER BY w.week_start_date DESC LIMIT 1
-            """).fetchone()
+            """)
+            weekly = weekly_cursor.fetchone()
+            weekly_columns = [col[0] for col in weekly_cursor.description]
             
             # Focus des offres
-            offers = conn.execute("""
+            offers_cursor = conn.execute("""
                 SELECT w.week_label, w.week_start_date, of.*
                 FROM offers_focus of
                 JOIN dim_week w ON of.week_id = w.id
                 ORDER BY w.week_start_date DESC LIMIT 1
-            """).fetchone()
+            """)
+            offers = offers_cursor.fetchone()
+            offers_columns = [col[0] for col in offers_cursor.description]
             
             # Détails des réservations
-            bookings = conn.execute("""
+            bookings_cursor = conn.execute("""
                 SELECT w.week_label, w.week_start_date, bd.*
                 FROM bookings_details bd
                 JOIN dim_week w ON bd.week_id = w.id
                 ORDER BY w.week_start_date DESC LIMIT 1
-            """).fetchone()
+            """)
+            bookings = bookings_cursor.fetchone()
+            bookings_columns = [col[0] for col in bookings_cursor.description]
             
             # Canaux d'acquisition
-            channels = conn.execute("""
+            channels_cursor = conn.execute("""
                 SELECT w.week_label, w.week_start_date, c.channel_code, c.channel_label, ac.*
                 FROM acquisition_channels ac
                 JOIN dim_week w ON ac.week_id = w.id
                 JOIN dim_channel c ON ac.channel_id = c.id
                 WHERE w.week_start_date = (SELECT MAX(week_start_date) FROM dim_week)
                 ORDER BY c.channel_code
-            """).fetchall()
+            """)
+            channels = channels_cursor.fetchall()
+            channels_columns = [col[0] for col in channels_cursor.description]
             
             # Notes de campagne
-            campaign_notes = conn.execute("""
+            campaign_notes_cursor = conn.execute("""
                 SELECT w.week_label, c.channel_code, ccn.*
                 FROM channel_campaign_notes ccn
                 JOIN dim_week w ON ccn.week_id = w.id
                 JOIN dim_channel c ON ccn.channel_id = c.id
                 WHERE w.week_start_date = (SELECT MAX(week_start_date) FROM dim_week)
                 ORDER BY c.channel_code, ccn.campaign_name
-            """).fetchall()
+            """)
+            campaign_notes = campaign_notes_cursor.fetchall()
+            campaign_notes_columns = [col[0] for col in campaign_notes_cursor.description]
+            
+            # Créer les dictionnaires avec les données brutes
+            weekly_data = dict(zip(weekly_columns, weekly)) if weekly else None
+            offers_data = dict(zip(offers_columns, offers)) if offers else None
+            bookings_data = dict(zip(bookings_columns, bookings)) if bookings else None
+            
+            # Formater les valeurs du résumé hebdomadaire
+            if weekly_data:
+                weekly_data['sessions'] = format_kpi_value(weekly_data['sessions'], 'sessions')
+                weekly_data['revenue_b2c'] = format_kpi_value(weekly_data['revenue_b2c'], 'revenue')
+                weekly_data['average_basket_value'] = format_kpi_value(weekly_data['average_basket_value'], 'basket_value')
+                weekly_data['conversion_rate'] = format_kpi_value(weekly_data['conversion_rate'], 'conversion_rate')
+                weekly_data['nb_bookings'] = format_kpi_value(weekly_data['nb_bookings'], 'bookings')
+                
+                # Formater les variations
+                weekly_data['vs_ly_sessions'] = format_kpi_value(weekly_data['vs_ly_sessions'], 'percentage')
+                weekly_data['vs_lw_sessions'] = format_kpi_value(weekly_data['vs_lw_sessions'], 'percentage')
+                weekly_data['vs_ly_revenue'] = format_kpi_value(weekly_data['vs_ly_revenue'], 'percentage')
+                weekly_data['vs_lw_revenue'] = format_kpi_value(weekly_data['vs_lw_revenue'], 'percentage')
+                weekly_data['vs_ly_abv'] = format_kpi_value(weekly_data['vs_ly_abv'], 'percentage')
+                weekly_data['vs_lw_abv'] = format_kpi_value(weekly_data['vs_lw_abv'], 'percentage')
+                weekly_data['vs_ly_cr'] = format_kpi_value(weekly_data['vs_ly_cr'], 'percentage')
+                weekly_data['vs_lw_cr'] = format_kpi_value(weekly_data['vs_lw_cr'], 'percentage')
+                weekly_data['vs_ly_bookings'] = format_kpi_value(weekly_data['vs_ly_bookings'], 'percentage')
+                weekly_data['vs_lw_bookings'] = format_kpi_value(weekly_data['vs_lw_bookings'], 'percentage')
+            
+            # Formater les valeurs des offres
+            if offers_data:
+                offers_data['last_minute_pct'] = format_kpi_value(offers_data['last_minute_pct'], 'percentage')
+                offers_data['early_booking_pct'] = format_kpi_value(offers_data['early_booking_pct'], 'percentage')
+                offers_data['summer_flash_revenue'] = format_kpi_value(offers_data['summer_flash_revenue'], 'revenue')
+                offers_data['summer_flash_bookings'] = format_kpi_value(offers_data['summer_flash_bookings'], 'bookings')
+                offers_data['summer_flash_abv'] = format_kpi_value(offers_data['summer_flash_abv'], 'basket_value')
+                offers_data['lead_gen_revenue'] = format_kpi_value(offers_data['lead_gen_revenue'], 'revenue')
+                offers_data['lead_gen_bookings'] = format_kpi_value(offers_data['lead_gen_bookings'], 'bookings')
+            
+            # Formater les valeurs des détails des réservations
+            if bookings_data:
+                bookings_data['month_july_pct'] = format_kpi_value(bookings_data['month_july_pct'], 'percentage')
+                bookings_data['month_august_pct'] = format_kpi_value(bookings_data['month_august_pct'], 'percentage')
+                bookings_data['month_sept_pct'] = format_kpi_value(bookings_data['month_sept_pct'], 'percentage')
+                bookings_data['length_2n_pct'] = format_kpi_value(bookings_data['length_2n_pct'], 'percentage')
+                bookings_data['length_3n_pct'] = format_kpi_value(bookings_data['length_3n_pct'], 'percentage')
+                bookings_data['length_4n_pct'] = format_kpi_value(bookings_data['length_4n_pct'], 'percentage')
             
             return {
-                'weekly_summary': dict(zip([col[0] for col in conn.execute("SELECT * FROM weekly_summary LIMIT 0").description], weekly)) if weekly else None,
-                'offers_focus': dict(zip([col[0] for col in conn.execute("SELECT * FROM offers_focus LIMIT 0").description], offers)) if offers else None,
-                'bookings_details': dict(zip([col[0] for col in conn.execute("SELECT * FROM bookings_details LIMIT 0").description], bookings)) if bookings else None,
-                'acquisition_channels': [dict(zip([col[0] for col in conn.execute("SELECT * FROM acquisition_channels LIMIT 0").description], row)) for row in channels],
-                'campaign_notes': [dict(zip([col[0] for col in conn.execute("SELECT * FROM channel_campaign_notes LIMIT 0").description], row)) for row in campaign_notes]
+                'weekly_summary': weekly_data,
+                'offers_focus': offers_data,
+                'bookings_details': bookings_data,
+                'acquisition_channels': [dict(zip(channels_columns, row)) for row in channels],
+                'campaign_notes': [dict(zip(campaign_notes_columns, row)) for row in campaign_notes]
             }
     except Exception as e:
         print(f"Erreur lors de la récupération des données hebdomadaires: {e}")
@@ -972,4 +1075,171 @@ def delete_extraction(extraction_id):
             return True
     except Exception as e:
         print(f"Erreur lors de la suppression de l'extraction {extraction_id}: {e}")
+        return False
+
+
+# ============================================================================
+# COLLABORATIVE DOCUMENTS (YJS/CRDT) FUNCTIONS
+# ============================================================================
+
+def get_or_create_document(doc_id: str, document_type: str = 'data-history') -> Optional[Dict[str, Any]]:
+    """Récupère ou crée un document collaboratif"""
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.execute("""
+                SELECT doc_id, document_type, state, metadata, created_at, updated_at, version
+                FROM collaborative_documents 
+                WHERE doc_id = ?
+            """, (doc_id,))
+            
+            row = cursor.fetchone()
+            
+            if row:
+                # Document existe, mettre à jour last_accessed
+                conn.execute("""
+                    UPDATE collaborative_documents 
+                    SET last_accessed = CURRENT_TIMESTAMP 
+                    WHERE doc_id = ?
+                """, (doc_id,))
+                conn.commit()
+                
+                return {
+                    'doc_id': row[0],
+                    'document_type': row[1],
+                    'state': row[2],  # BLOB binary data
+                    'metadata': json.loads(row[3]) if row[3] else {},
+                    'created_at': row[4],
+                    'updated_at': row[5],
+                    'version': row[6]
+                }
+            else:
+                # Créer nouveau document
+                initial_metadata = {
+                    'title': f'Data History - {doc_id}',
+                    'collaborators': [],
+                    'permissions': 'public'
+                }
+                
+                conn.execute("""
+                    INSERT INTO collaborative_documents 
+                    (doc_id, document_type, state, metadata, version)
+                    VALUES (?, ?, ?, ?, 1)
+                """, (doc_id, document_type, None, json.dumps(initial_metadata)))
+                conn.commit()
+                
+                return {
+                    'doc_id': doc_id,
+                    'document_type': document_type,
+                    'state': None,
+                    'metadata': initial_metadata,
+                    'created_at': datetime.now().isoformat(),
+                    'updated_at': datetime.now().isoformat(),
+                    'version': 1
+                }
+                
+    except Exception as e:
+        print(f"Erreur lors de la récupération/création du document {doc_id}: {e}")
+        return None
+
+
+def update_document_state(doc_id: str, state: bytes, metadata: Optional[Dict[str, Any]] = None) -> bool:
+    """Met à jour l'état d'un document collaboratif"""
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            if metadata:
+                conn.execute("""
+                    UPDATE collaborative_documents 
+                    SET state = ?, metadata = ?, updated_at = CURRENT_TIMESTAMP, version = version + 1
+                    WHERE doc_id = ?
+                """, (state, json.dumps(metadata), doc_id))
+            else:
+                conn.execute("""
+                    UPDATE collaborative_documents 
+                    SET state = ?, updated_at = CURRENT_TIMESTAMP, version = version + 1
+                    WHERE doc_id = ?
+                """, (state, doc_id))
+            
+            conn.commit()
+            return True
+            
+    except Exception as e:
+        print(f"Erreur lors de la mise à jour du document {doc_id}: {e}")
+        return False
+
+
+def get_document_history(doc_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+    """Récupère l'historique des versions d'un document"""
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.execute("""
+                SELECT doc_id, version, updated_at, metadata
+                FROM collaborative_documents 
+                WHERE doc_id = ?
+                ORDER BY version DESC
+                LIMIT ?
+            """, (doc_id, limit))
+            
+            return [
+                {
+                    'doc_id': row[0],
+                    'version': row[1],
+                    'updated_at': row[2],
+                    'metadata': json.loads(row[3]) if row[3] else {}
+                }
+                for row in cursor.fetchall()
+            ]
+            
+    except Exception as e:
+        print(f"Erreur lors de la récupération de l'historique du document {doc_id}: {e}")
+        return []
+
+
+def list_collaborative_documents(document_type: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+    """Liste tous les documents collaboratifs"""
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            if document_type:
+                cursor = conn.execute("""
+                    SELECT doc_id, document_type, metadata, created_at, updated_at, last_accessed, version
+                    FROM collaborative_documents 
+                    WHERE document_type = ?
+                    ORDER BY updated_at DESC
+                    LIMIT ?
+                """, (document_type, limit))
+            else:
+                cursor = conn.execute("""
+                    SELECT doc_id, document_type, metadata, created_at, updated_at, last_accessed, version
+                    FROM collaborative_documents 
+                    ORDER BY updated_at DESC
+                    LIMIT ?
+                """, (limit,))
+            
+            return [
+                {
+                    'doc_id': row[0],
+                    'document_type': row[1],
+                    'metadata': json.loads(row[2]) if row[2] else {},
+                    'created_at': row[3],
+                    'updated_at': row[4],
+                    'last_accessed': row[5],
+                    'version': row[6]
+                }
+                for row in cursor.fetchall()
+            ]
+            
+    except Exception as e:
+        print(f"Erreur lors de la récupération de la liste des documents: {e}")
+        return []
+
+
+def delete_collaborative_document(doc_id: str) -> bool:
+    """Supprime un document collaboratif"""
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.execute("DELETE FROM collaborative_documents WHERE doc_id = ?", (doc_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+            
+    except Exception as e:
+        print(f"Erreur lors de la suppression du document {doc_id}: {e}")
         return False

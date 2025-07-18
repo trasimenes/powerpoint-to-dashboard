@@ -1,107 +1,238 @@
 {% extends 'base.html' %}
-{% block title %}Upload PowerPoint{% endblock %}
-{% block content %}
-<!-- Statistiques -->
-{% if stats and stats.total_extractions > 0 %}
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-header bg-light">
-        <h5 class="card-title mb-0">
-          <i class="bi bi-graph-up me-2"></i>Statistiques de l'application
-        </h5>
-      </div>
-      <div class="card-body">
-        <div class="row text-center">
-          <div class="col-md-3">
-            <div class="border-end">
-              <h3 class="text-primary">{{ stats.total_extractions }}</h3>
-              <p class="text-muted mb-0">Analyses totales</p>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="border-end">
-              <h3 class="text-success">{{ stats.successful_extractions }}</h3>
-              <p class="text-muted mb-0">Analyses réussies</p>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="border-end">
-              <h3 class="text-warning">{{ stats.failed_extractions }}</h3>
-              <p class="text-muted mb-0">Analyses échouées</p>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div>
-              <h3 class="text-info">
-                {% if stats.last_extraction %}
-                  <small>{{ stats.last_extraction.split(' ')[0] }}</small>
-                {% else %}
-                  -
-                {% endif %}
-              </h3>
-              <p class="text-muted mb-0">Dernière analyse</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-{% endif %}
+{% block title %}PowerPoint Dashboard{% endblock %}
 
-<div class="row justify-content-center">
-  <div class="col-lg-8">
-    <div class="card">
-      <div class="card-header bg-primary text-white">
-        <h3 class="card-title mb-0">
-          <i class="bi bi-upload me-2"></i>Upload PowerPoint
-        </h3>
-      </div>
-      <div class="card-body">
-        <div class="alert alert-info">
-          <i class="bi bi-info-circle me-2"></i>
-          <strong>Instructions :</strong> Uploadez votre fichier PowerPoint (.pptx) pour extraire les données des slides 31 et 32 par défaut.
-        </div>
+{% block content %}
+<!-- Webpixels CSS -->
+<link href="https://unpkg.com/@webpixels/css@1.1.5/dist/index.css" rel="stylesheet">
+
+<style>
+    .dashboard-main {
+        background-color: #f8f9fb;
+        min-height: 100vh;
+    }
+    
+    .upload-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 0;
+        margin-bottom: 2rem;
+    }
+    
+    .upload-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 0;
+        margin-bottom: 2rem;
+    }
+    
+    .stats-card .card-body {
+        padding: 0;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 0;
+    }
+    
+    .stat-item h3 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .dashboard-header {
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 1.5rem 0;
+    }
+    
+    .btn-upload {
+        background: linear-gradient(135deg, #fec5bb 0%, #fcd5ce 100%);
+        border: none;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-upload:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(254, 197, 187, 0.4);
+        color: white;
+    }
+    
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        padding: 0.75rem 1rem;
+    }
+    
+    .form-control:focus {
+        border-color: #fec5bb;
+        box-shadow: 0 0 0 0.2rem rgba(254, 197, 187, 0.25);
+    }
+    
+    .alert-info {
+        background: linear-gradient(135deg, #f8edeb 0%, #fae1dd 100%);
+        border: 1px solid #fcd5ce;
+        border-radius: 8px;
+        color: #4a5568;
+    }
+</style>
+
+<!-- Dashboard -->
+<div class="d-flex flex-column flex-lg-row h-lg-full">
+    {% include 'partials/navigation.html' %}
+    
+    <!-- Main content -->
+    <div class="h-screen flex-grow-1 overflow-y-lg-auto dashboard-main">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="container-fluid">
+                <div class="row align-items-center">
+                    <div class="col-sm-6 col-12">
+                        <h1 class="h2 mb-0 ls-tight">PowerPoint Dashboard</h1>
+                        <p class="text-muted mb-0">Analysez vos présentations PowerPoint et extrayez les données clés</p>
+                    </div>
+                    <div class="col-sm-6 col-12 text-sm-end">
+                        <div class="mx-n1">
+                            <a href="#upload" class="btn btn-sm btn-upload">
+                                <i class="bi bi-upload me-1"></i>Upload File
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
         
-        <form method="post" enctype="multipart/form-data">
-          <div class="mb-4">
-            <label for="pptx" class="form-label fw-bold">
-              <i class="bi bi-file-earmark-ppt me-1"></i>Fichier PowerPoint
-            </label>
-            <input type="file" class="form-control form-control-lg" name="pptx" accept=".pptx" required>
-            <div class="form-text">Formats acceptés : .pptx uniquement (max 50MB)</div>
-          </div>
-          
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="start" class="form-label fw-bold">
-                  <i class="bi bi-1-circle me-1"></i>Slide de début
-                </label>
-                <input type="number" class="form-control" name="start" value="31" min="1" required>
-                <div class="form-text">Slide contenant les KPIs et synthèse</div>
-              </div>
+        <!-- Main -->
+        <main class="py-6">
+            <div class="container-fluid">
+                <!-- Statistics -->
+                {% if stats and stats.total_extractions > 0 %}
+                <div class="row g-4 mb-6">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="stats-card">
+                            <div class="card-body">
+                                <div class="stat-item" style="background: linear-gradient(135deg, #fec5bb 0%, #fcd5ce 100%);">
+                                    <h3 class="text-white">{{ stats.total_extractions }}</h3>
+                                    <p class="text-white mb-0">Total Analyses</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="stats-card">
+                            <div class="card-body">
+                                <div class="stat-item" style="background: linear-gradient(135deg, #fae1dd 0%, #f8edeb 100%);">
+                                    <h3 class="text-white">{{ stats.successful_extractions }}</h3>
+                                    <p class="text-white mb-0">Successful</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="stats-card">
+                            <div class="card-body">
+                                <div class="stat-item" style="background: linear-gradient(135deg, #e8e8e4 0%, #d8e2dc 100%);">
+                                    <h3 class="text-white">{{ stats.failed_extractions }}</h3>
+                                    <p class="text-white mb-0">Failed</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="stats-card">
+                            <div class="card-body">
+                                <div class="stat-item" style="background: linear-gradient(135deg, #ece4db 0%, #ffe5d9 100%);">
+                                    <h3 class="text-white">
+                                        {% if stats.last_extraction %}
+                                            <small style="font-size: 1.5rem;">{{ stats.last_extraction.split(' ')[0] }}</small>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </h3>
+                                    <p class="text-white mb-0">Last Analysis</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Upload Form -->
+                <div class="row justify-content-center" id="upload">
+                    <div class="col-lg-8">
+                        <div class="upload-card">
+                            <div class="card-body p-5">
+                                <div class="text-center mb-4">
+                                    <div class="mb-3">
+                                        <i class="bi bi-file-earmark-ppt display-1" style="color: #fec5bb;"></i>
+                                    </div>
+                                    <h3 class="mb-2">Upload PowerPoint File</h3>
+                                    <p class="text-muted">Analysez vos présentations PowerPoint et extrayez automatiquement les données des slides</p>
+                                </div>
+                                
+                                <div class="alert alert-info mb-4">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Instructions :</strong> Uploadez votre fichier PowerPoint (.pptx) pour extraire les données des slides 31 et 32 par défaut.
+                                </div>
+                                
+                                <form method="post" enctype="multipart/form-data">
+                                    <div class="mb-4">
+                                        <label for="pptx" class="form-label fw-bold">
+                                            <i class="bi bi-file-earmark-ppt me-1"></i>Fichier PowerPoint
+                                        </label>
+                                        <input type="file" class="form-control form-control-lg" name="pptx" accept=".pptx" required>
+                                        <div class="form-text">Formats acceptés : .pptx uniquement (max 50MB)</div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="start" class="form-label fw-bold">
+                                                    <i class="bi bi-1-circle me-1"></i>Slide de début
+                                                </label>
+                                                <input type="number" class="form-control" name="start" value="31" min="1" required>
+                                                <div class="form-text">Slide contenant les KPIs et synthèse</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="end" class="form-label fw-bold">
+                                                    <i class="bi bi-2-circle me-1"></i>Slide de fin
+                                                </label>
+                                                <input type="number" class="form-control" name="end" value="32" min="1" required>
+                                                <div class="form-text">Slide contenant le tableau d'analyse</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-upload btn-lg">
+                                            <i class="bi bi-upload me-2"></i>Analyser le PowerPoint
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="end" class="form-label fw-bold">
-                  <i class="bi bi-2-circle me-1"></i>Slide de fin
-                </label>
-                <input type="number" class="form-control" name="end" value="32" min="1" required>
-                <div class="form-text">Slide contenant le tableau d'analyse</div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-            <button type="submit" class="btn btn-primary btn-lg">
-              <i class="bi bi-upload me-2"></i>Analyser le PowerPoint
-            </button>
-          </div>
-        </form>
-      </div>
+        </main>
     </div>
-  </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 {% endblock %}

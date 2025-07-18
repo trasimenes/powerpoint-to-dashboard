@@ -2,19 +2,48 @@
 {% block title %}Import CPFR - Données{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="d-flex justify-content-between align-items-center">
-      <h2 class="mb-0">
-        <i class="bi bi-upload me-2"></i>Import des données CPFR
-      </h2>
-      <a href="/cpfr" class="btn btn-outline-primary">
-        <i class="bi bi-arrow-left me-1"></i>Retour au Dashboard
-      </a>
-    </div>
-    <hr>
-  </div>
-</div>
+<!-- Webpixels CSS -->
+<link href="https://unpkg.com/@webpixels/css@1.1.5/dist/index.css" rel="stylesheet">
+
+<style>
+    .dashboard-main {
+        background-color: #f8f9fb;
+        min-height: 100vh;
+    }
+    
+    .dashboard-header {
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 1.5rem 0;
+    }
+</style>
+
+<!-- Dashboard -->
+<div class="d-flex flex-column flex-lg-row h-lg-full">
+    {% include 'partials/navigation.html' %}
+    
+    <!-- Main content -->
+    <div class="h-screen flex-grow-1 overflow-y-lg-auto dashboard-main">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="container-fluid">
+                <div class="row align-items-center">
+                    <div class="col-sm-6 col-12">
+                        <h1 class="h2 mb-0 ls-tight">Import des données CPFR</h1>
+                        <p class="text-muted mb-0">Importation manuelle des données</p>
+                    </div>
+                    <div class="col-sm-6 col-12 text-sm-end">
+                        <a href="/cpfr" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-left me-1"></i>Retour au Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main -->
+        <main class="py-6">
+            <div class="container-fluid">
 
 <div class="row">
   <div class="col-12">
@@ -469,4 +498,9 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
+
+            </div>
+        </main>
+    </div>
+</div>
 {% endblock %} 

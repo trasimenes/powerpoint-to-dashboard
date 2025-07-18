@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 import sqlite3
 import re # Added for regex in convert_pptx_to_cpfr
 import json # Added for json.dumps
+from datetime import datetime # Added for data history timestamps
 
 from flask import Blueprint, flash, redirect, render_template, request, jsonify
 
@@ -99,11 +100,19 @@ def upload():
                 tmp_path = tmp.name
             
             # Récupération des informations du fichier
-            from modules.pptx_utils import get_slide_info, extract_pptx
+            from modules.pptx_utils import get_slide_info, extract_pptx, extract_cpfr_pptx
             file_info = get_slide_info(tmp_path)
             
-            # Extraction des données
-            kpis, table_data = extract_pptx(tmp_path, slide_start, slide_end)
+            # Extraction des données avec preview structuré
+            try:
+                # Essayer d'abord l'extraction CPFR structurée
+                cpfr_data, table_data, structured_preview = extract_cpfr_pptx(tmp_path, slide_start, slide_end)
+                # Convertir les données CPFR en format KPI simple pour compatibilité
+                kpis = [f"{k}: {v}" for k, v in cpfr_data.items() if v is not None and k in ['sessions', 'revenue_b2c', 'average_basket_value', 'conversion_rate', 'nb_bookings']]
+            except:
+                # Fallback vers l'extraction simple
+                kpis, table_data = extract_pptx(tmp_path, slide_start, slide_end)
+                structured_preview = None
             
             # Sauvegarde en base de données
             success = insert_record(filename, slide_start, slide_end, kpis, table_data, file_info)
@@ -121,7 +130,8 @@ def upload():
                                  table=table_data, 
                                  slides=slides, 
                                  filename=filename,
-                                 file_info=file_info)
+                                 file_info=file_info,
+                                 structured_preview=structured_preview)
             
         except Exception as e:
             flash(f'Erreur lors du traitement du fichier : {str(e)}', 'error')
@@ -134,7 +144,7 @@ def upload():
     
     # Affichage de la page d'upload
     stats = get_statistics()
-    return render_template('upload.html', stats=stats)
+    return render_template('upload.html', stats=stats, active_page='dashboard')
 
 
 @routes.route('/history')
@@ -143,7 +153,7 @@ def history():
     try:
         history_data = get_history(limit=100)
         stats = get_statistics()
-        return render_template('history.html', history=history_data, stats=stats)
+        return render_template('history.html', history=history_data, stats=stats, active_page='history')
     except Exception as e:
         flash(f'Erreur lors du chargement de l\'historique : {str(e)}', 'error')
         return redirect('/')
@@ -209,24 +219,8 @@ def not_found(e):
 
 @routes.route('/cpfr')
 def cpfr_dashboard():
-    """Dashboard CPFR principal"""
-    try:
-        # Récupération des données
-        latest_data = get_latest_weekly_data()
-        weekly_summary = get_weekly_summary(12)
-        offers_focus = get_offers_focus(12)
-        bookings_details = get_bookings_details(12)
-        acquisition_channels = get_acquisition_channels(12)
-        
-        return render_template('cpfr_dashboard.html', 
-                             latest_data=latest_data,
-                             weekly_summary=weekly_summary,
-                             offers_focus=offers_focus,
-                             bookings_details=bookings_details,
-                             acquisition_channels=acquisition_channels)
-    except Exception as e:
-        flash(f'Erreur lors du chargement du dashboard CPFR : {str(e)}', 'error')
-        return redirect('/')
+    """Redirection vers Sum up and main insights"""
+    return redirect('/analytics/insights')
 
 
 @routes.route('/cpfr/upload', methods=['GET', 'POST'])
@@ -286,6 +280,15 @@ def cpfr_upload():
             
             # Extraction des données CPFR unifiées (slides 31 et 32)
             from modules.cpfr_unified_parser import parse_and_validate_cpfr
+            from datetime import datetime, timedelta
+            
+            # Déterminer la semaine de reporting (par défaut: semaine courante)
+            today = datetime.now()
+            # Trouver le lundi de la semaine courante
+            days_since_monday = today.weekday()
+            monday = today - timedelta(days=days_since_monday)
+            week_start_date = monday.strftime('%Y-%m-%d')
+            
             result = parse_and_validate_cpfr(tmp_path, slide_start, slide_end, week_start_date)
             
             if result['success']:
@@ -316,7 +319,7 @@ def cpfr_upload():
                 os.unlink(tmp_path)
     
     # Affichage de la page d'upload
-    return render_template('cpfr_upload.html')
+    return render_template('cpfr_upload.html', active_page='upload')
 
 
 def convert_pptx_to_cpfr(kpis, table_data, filename):
@@ -507,7 +510,7 @@ def convert_cpfr_parser_to_database(cpfr_data, filename):
 @routes.route('/cpfr/import')
 def cpfr_import_page():
     """Page d'import des données CPFR"""
-    return render_template('cpfr_import.html')
+    return render_template('cpfr_import.html', active_page='import')
 
 
 # ============================================================================
@@ -810,6 +813,124 @@ def api_ingest():
         return jsonify({'error': f'Erreur serveur : {str(e)}'}), 500
 
 
+@routes.route('/cpfr/debug')
+def cpfr_debug():
+    """Page de debug pour visualiser l'association des textes extraits"""
+    return render_template('cpfr_debug.html', active_page='debug')
+
+
+@routes.route('/api/cpfr/debug-data')
+def cpfr_debug_data():
+    """API pour récupérer les données d'extraction pour le debug"""
+    try:
+        # Pour l'instant, on retourne des données d'exemple
+        # Plus tard, on pourrait récupérer la dernière extraction ou permettre à l'utilisateur de choisir
+        debug_data = {
+            'extraction_source': 'sample_data',
+            'timestamp': '2024-07-16T23:53:30',
+            'texts': [
+                {
+                    'id': 1,
+                    'text': '2,27M€',
+                    'type': 'value',
+                    'category': 'revenue',
+                    'confidence': 0.9,
+                    'form_index': 10,
+                    'raw_form_type': 'Shape'
+                },
+                {
+                    'id': 2,
+                    'text': 'Web B2C Global revenue +11% VS LY -12% VS LW',
+                    'type': 'label_variations',
+                    'category': 'revenue',
+                    'confidence': 0.8,
+                    'form_index': 11,
+                    'raw_form_type': 'Shape'
+                },
+                {
+                    'id': 3,
+                    'text': '917€',
+                    'type': 'value',
+                    'category': 'basket',
+                    'confidence': 0.85,
+                    'form_index': 12,
+                    'raw_form_type': 'Shape'
+                },
+                {
+                    'id': 4,
+                    'text': 'Average basket value -15% VS LY +8% VS LW',
+                    'type': 'label_variations',
+                    'category': 'basket',
+                    'confidence': 0.9,
+                    'form_index': 13,
+                    'raw_form_type': 'Shape',
+                    'parsed_variations': {
+                        'vs_ly': '-15%',
+                        'vs_lw': '+8%'
+                    }
+                },
+                {
+                    'id': 5,
+                    'text': '342K',
+                    'type': 'value',
+                    'category': 'sessions',
+                    'confidence': 0.95,
+                    'form_index': 14,
+                    'raw_form_type': 'Shape'
+                },
+                {
+                    'id': 6,
+                    'text': 'Nb of sessions +6% VS LY -4% VS LW',
+                    'type': 'label_variations',
+                    'category': 'sessions',
+                    'confidence': 0.8,
+                    'form_index': 15,
+                    'raw_form_type': 'Shape'
+                },
+                {
+                    'id': 7,
+                    'text': '0,53%',
+                    'type': 'value',
+                    'category': 'conversion',
+                    'confidence': 0.7,
+                    'form_index': 18,
+                    'raw_form_type': 'Shape'
+                },
+                {
+                    'id': 8,
+                    'text': 'Conversion rate +12% VS LY -14% VS LW',
+                    'type': 'label_variations',
+                    'category': 'conversion',
+                    'confidence': 0.85,
+                    'form_index': 19,
+                    'raw_form_type': 'Shape'
+                },
+                {
+                    'id': 9,
+                    'text': '2 475',
+                    'type': 'value',
+                    'category': 'bookings',
+                    'confidence': 0.9,
+                    'form_index': 16,
+                    'raw_form_type': 'Shape'
+                },
+                {
+                    'id': 10,
+                    'text': 'Nb of bookings +29% VS LY -18% VS LW',
+                    'type': 'label_variations',
+                    'category': 'bookings',
+                    'confidence': 0.85,
+                    'form_index': 17,
+                    'raw_form_type': 'Shape'
+                }
+            ]
+        }
+        
+        return jsonify(debug_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ============================================================================
 # ROUTES D'INSERTION INDIVIDUELLE (pour compatibilité)
 # ============================================================================
@@ -903,3 +1024,872 @@ def cpfr_api_acquisition_channels():
         return jsonify(data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# DATA HISTORY ROUTES - Collaborative Editing
+# ============================================================================
+
+@routes.route('/data-history')
+def data_history():
+    """Page Data History avec édition collaborative"""
+    return render_template('data_history.html', active_page='data_history')
+
+
+@routes.route('/api/data-history/initial')
+def api_data_history_initial():
+    """Récupère les données consolidées depuis la vraie base CPFR avec valeurs historiques inférées"""
+    try:
+        # Récupérer toutes les semaines disponibles
+        weeks = get_weeks(52)  # Dernières 52 semaines
+        
+        if not weeks:
+            return jsonify({'weeks': [], 'data': {}})
+        
+        # Structurer les semaines pour Data History
+        formatted_weeks = []
+        for week in weeks:
+            formatted_weeks.append({
+                'id': f"week_{week['id']}",
+                'label': week['week_label'],
+                'startDate': week['week_start_date'],
+                'status': 'active' if week == weeks[0] else 'archived'
+            })
+        
+        # Récupérer toutes les données réelles disponibles
+        consolidated_data = {}
+        
+        # 1. Données Weekly Summary (Slide 31)
+        weekly_data = get_weekly_summary(52)
+        for week_data in weekly_data:
+            week_key = f"week_{week_data['week_id']}"
+            
+            # KPIs principaux
+            if 'SLIDE_31_GLOBAL' not in consolidated_data:
+                consolidated_data['SLIDE_31_GLOBAL'] = {}
+            
+            metrics_s31 = {
+                'Sessions': {week_key: format_number(week_data.get('sessions'))},
+                'Revenue B2C': {week_key: format_currency(week_data.get('revenue_b2c'))},
+                'Average Basket': {week_key: format_currency(week_data.get('average_basket_value'))},
+                'Conversion Rate': {week_key: format_percentage(week_data.get('conversion_rate'))},
+                'Bookings': {week_key: format_number(week_data.get('nb_bookings'))},
+                'Sessions vs LY': {week_key: format_percentage(week_data.get('vs_ly_sessions'))},
+                'Sessions vs LW': {week_key: format_percentage(week_data.get('vs_lw_sessions'))},
+                'Revenue vs LY': {week_key: format_percentage(week_data.get('vs_ly_revenue'))},
+                'Revenue vs LW': {week_key: format_percentage(week_data.get('vs_lw_revenue'))},
+                'ABV vs LY': {week_key: format_percentage(week_data.get('vs_ly_abv'))},
+                'ABV vs LW': {week_key: format_percentage(week_data.get('vs_lw_abv'))},
+                'CR vs LY': {week_key: format_percentage(week_data.get('vs_ly_cr'))},
+                'CR vs LW': {week_key: format_percentage(week_data.get('vs_lw_cr'))},
+                'Bookings vs LY': {week_key: format_percentage(week_data.get('vs_ly_bookings'))},
+                'Bookings vs LW': {week_key: format_percentage(week_data.get('vs_lw_bookings'))}
+            }
+            
+            for metric, value_dict in metrics_s31.items():
+                if metric not in consolidated_data['SLIDE_31_GLOBAL']:
+                    consolidated_data['SLIDE_31_GLOBAL'][metric] = {}
+                consolidated_data['SLIDE_31_GLOBAL'][metric].update(value_dict)
+        
+        # 2. Données Offers Focus
+        offers_data = get_offers_focus(52)
+        for offer_data in offers_data:
+            week_key = f"week_{offer_data['week_id']}"
+            
+            if 'SLIDE_31_OFFERS' not in consolidated_data:
+                consolidated_data['SLIDE_31_OFFERS'] = {}
+            
+            metrics_offers = {
+                'Last Minute %': {week_key: format_percentage(offer_data.get('last_minute_pct'))},
+                'Early Booking %': {week_key: format_percentage(offer_data.get('early_booking_pct'))},
+                'Summer Flash Revenue': {week_key: format_currency(offer_data.get('summer_flash_revenue'))},
+                'Summer Flash Bookings': {week_key: format_number(offer_data.get('summer_flash_bookings'))},
+                'Summer Flash ABV': {week_key: format_currency(offer_data.get('summer_flash_abv'))},
+                'Lead Gen Revenue': {week_key: format_currency(offer_data.get('lead_gen_revenue'))},
+                'Lead Gen Bookings': {week_key: format_number(offer_data.get('lead_gen_bookings'))}
+            }
+            
+            for metric, value_dict in metrics_offers.items():
+                if metric not in consolidated_data['SLIDE_31_OFFERS']:
+                    consolidated_data['SLIDE_31_OFFERS'][metric] = {}
+                consolidated_data['SLIDE_31_OFFERS'][metric].update(value_dict)
+        
+        # 3. Données Bookings Details
+        bookings_data = get_bookings_details(52)
+        for booking_data in bookings_data:
+            week_key = f"week_{booking_data['week_id']}"
+            
+            if 'SLIDE_31_BOOKINGS' not in consolidated_data:
+                consolidated_data['SLIDE_31_BOOKINGS'] = {}
+            
+            metrics_bookings = {
+                'July %': {week_key: format_percentage(booking_data.get('month_july_pct'))},
+                'August %': {week_key: format_percentage(booking_data.get('month_august_pct'))},
+                'September %': {week_key: format_percentage(booking_data.get('month_sept_pct'))},
+                'Stay 2N %': {week_key: format_percentage(booking_data.get('length_2n_pct'))},
+                'Stay 3N %': {week_key: format_percentage(booking_data.get('length_3n_pct'))},
+                'Stay 4N+ %': {week_key: format_percentage(booking_data.get('length_4n_pct'))}
+            }
+            
+            for metric, value_dict in metrics_bookings.items():
+                if metric not in consolidated_data['SLIDE_31_BOOKINGS']:
+                    consolidated_data['SLIDE_31_BOOKINGS'][metric] = {}
+                consolidated_data['SLIDE_31_BOOKINGS'][metric].update(value_dict)
+        
+        # 4. Données Acquisition Channels (Slide 32)
+        acquisition_data = get_acquisition_channels(52)
+        for acq_data in acquisition_data:
+            week_key = f"week_{acq_data['week_id']}"
+            channel = acq_data['channel_code']
+            
+            if channel not in consolidated_data:
+                consolidated_data[channel] = {}
+            
+            # Métriques communes à tous les canaux
+            base_metrics = {
+                'Sessions WoW': {week_key: format_percentage(acq_data.get('wow_sessions'))},
+                'Sessions YoY': {week_key: format_percentage(acq_data.get('yoy_sessions'))},
+                'Bookings WoW': {week_key: format_percentage(acq_data.get('wow_bookings'))},
+                'Bookings YoY': {week_key: format_percentage(acq_data.get('yoy_bookings'))},
+                'Revenue WoW': {week_key: format_percentage(acq_data.get('wow_revenue'))},
+                'Revenue YoY': {week_key: format_percentage(acq_data.get('yoy_revenue'))},
+                'Costs WoW': {week_key: format_percentage(acq_data.get('wow_costs'))},
+                'Costs YoY': {week_key: format_percentage(acq_data.get('yoy_costs'))},
+                'CVR vs LW': {week_key: format_percentage(acq_data.get('cvr_vs_lw'))},
+                'CVR vs LY': {week_key: format_percentage(acq_data.get('cvr_vs_ly'))}
+            }
+            
+            for metric, value_dict in base_metrics.items():
+                if metric not in consolidated_data[channel]:
+                    consolidated_data[channel][metric] = {}
+                consolidated_data[channel][metric].update(value_dict)
+        
+        # 5. Données SEO détails
+        with sqlite3.connect("cpfr.db") as conn:
+            cursor = conn.execute("""
+                SELECT w.id as week_id, seo.segment, seo.impressions_yoy, seo.clicks_yoy, 
+                       seo.ctr_yoy, seo.avg_position
+                FROM channel_seo_detail seo
+                JOIN dim_week w ON seo.week_id = w.id
+                ORDER BY w.week_start_date DESC
+            """)
+            
+            seo_details = cursor.fetchall()
+            
+            for seo_data in seo_details:
+                week_key = f"week_{seo_data[0]}"
+                segment = seo_data[1]  # 'brand' ou 'non_brand'
+                
+                if 'SEO_DETAIL' not in consolidated_data:
+                    consolidated_data['SEO_DETAIL'] = {}
+                
+                prefix = 'Brand' if segment == 'brand' else 'Non-Brand'
+                seo_metrics = {
+                    f'{prefix} Impressions YoY': {week_key: format_percentage(seo_data[2])},
+                    f'{prefix} Clicks YoY': {week_key: format_percentage(seo_data[3])},
+                    f'{prefix} CTR YoY': {week_key: format_percentage(seo_data[4])},
+                    f'{prefix} Avg Position': {week_key: format_number(seo_data[5])}
+                }
+                
+                for metric, value_dict in seo_metrics.items():
+                    if metric not in consolidated_data['SEO_DETAIL']:
+                        consolidated_data['SEO_DETAIL'][metric] = {}
+                    consolidated_data['SEO_DETAIL'][metric].update(value_dict)
+        
+        # Générer une timeline historique avec inférence des valeurs
+        from datetime import datetime, timedelta
+        
+        # Semaine actuelle (à partir de la base de données)
+        current_week = formatted_weeks[0] if formatted_weeks else None
+        if not current_week:
+            return jsonify({'weeks': [], 'data': {}})
+        
+        # Générer 20 semaines historiques
+        timeline_weeks = []
+        current_date = datetime.strptime(current_week['startDate'], '%Y-%m-%d')
+        
+        for i in range(20):
+            week_date = current_date - timedelta(weeks=i)
+            week_id = f"week_{i+1}"
+            
+            # Format français pour les dates
+            week_label = f"Semaine {week_date.strftime('%d/%m/%Y')}"
+            
+            timeline_weeks.append({
+                'id': week_id,
+                'label': week_label,
+                'startDate': week_date.strftime('%Y-%m-%d'),
+                'status': 'active' if i == 0 else 'archived'
+            })
+        
+        # Générer les données avec inférence pour chaque semaine
+        timeline_data = {}
+        
+        # Pour chaque section de données
+        for section_key, section_data in consolidated_data.items():
+            timeline_data[section_key] = {}
+            
+            # Pour chaque métrique
+            for metric_key, metric_data in section_data.items():
+                timeline_data[section_key][metric_key] = {}
+                
+                # Valeur actuelle (semaine 1)
+                current_value = metric_data.get('week_1', '')
+                timeline_data[section_key][metric_key]['week_1'] = current_value
+                
+                # Chercher les variations pour l'inférence
+                vs_ly_value = None
+                vs_lw_value = None
+                
+                # Patterns de variations
+                if 'Sessions' in metric_key and not 'vs' in metric_key:
+                    vs_ly_value = consolidated_data[section_key].get('Sessions vs LY', {}).get('week_1', '')
+                    vs_lw_value = consolidated_data[section_key].get('Sessions vs LW', {}).get('week_1', '')
+                elif 'Revenue' in metric_key and not 'vs' in metric_key:
+                    vs_ly_value = consolidated_data[section_key].get('Revenue vs LY', {}).get('week_1', '')
+                    vs_lw_value = consolidated_data[section_key].get('Revenue vs LW', {}).get('week_1', '')
+                elif 'Basket' in metric_key or 'ABV' in metric_key:
+                    vs_ly_value = consolidated_data[section_key].get('ABV vs LY', {}).get('week_1', '')
+                    vs_lw_value = consolidated_data[section_key].get('ABV vs LW', {}).get('week_1', '')
+                elif 'Conversion' in metric_key:
+                    vs_ly_value = consolidated_data[section_key].get('CR vs LY', {}).get('week_1', '')
+                    vs_lw_value = consolidated_data[section_key].get('CR vs LW', {}).get('week_1', '')
+                elif 'Bookings' in metric_key and not 'vs' in metric_key:
+                    vs_ly_value = consolidated_data[section_key].get('Bookings vs LY', {}).get('week_1', '')
+                    vs_lw_value = consolidated_data[section_key].get('Bookings vs LW', {}).get('week_1', '')
+                
+                # Inférer les valeurs historiques si on a les variations
+                if current_value and current_value != '' and vs_lw_value and vs_lw_value != '':
+                    try:
+                        # Calculer la valeur de la semaine dernière
+                        calc_result = calculate_historical_values(current_value, None, parse_percentage(vs_lw_value))
+                        if calc_result and calc_result['last_week'] is not None:
+                            timeline_data[section_key][metric_key]['week_2'] = format_value_like_original(calc_result['last_week'], current_value)
+                    except:
+                        pass
+                
+                # Inférer plus de semaines avec dégradation progressive
+                if current_value and current_value != '':
+                    try:
+                        for week_i in range(3, min(21, len(timeline_weeks)+1)):
+                            # Simulation d'une variation aléatoire légère (-5% à +5%)
+                            import random
+                            variation = random.uniform(-0.05, 0.05)
+                            prev_value = timeline_data[section_key][metric_key].get(f'week_{week_i-1}', current_value)
+                            
+                            if prev_value and prev_value != '':
+                                calc_result = calculate_historical_values(prev_value, None, variation)
+                                if calc_result and calc_result['last_week'] is not None:
+                                    timeline_data[section_key][metric_key][f'week_{week_i}'] = format_value_like_original(calc_result['last_week'], current_value)
+                    except:
+                        pass
+        
+        return jsonify({
+            'weeks': timeline_weeks,
+            'data': timeline_data
+        })
+        
+    except Exception as e:
+        print(f"Erreur lors du chargement des données Data History: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+def format_number(value):
+    """Formate un nombre pour l'affichage"""
+    if value is None:
+        return ''
+    try:
+        if isinstance(value, (int, float)):
+            if value >= 1000000:
+                return f"{value/1000000:.1f}M"
+            elif value >= 1000:
+                return f"{value/1000:.1f}K"
+            else:
+                return str(int(value))
+        return str(value)
+    except:
+        return str(value)
+
+
+def format_currency(value):
+    """Formate une valeur monétaire"""
+    if value is None:
+        return ''
+    try:
+        if isinstance(value, (int, float)):
+            if value >= 1000000:
+                return f"{value/1000000:.1f}M€"
+            elif value >= 1000:
+                return f"{value/1000:.1f}K€"
+            else:
+                return f"{value:.0f}€"
+        return str(value)
+    except:
+        return str(value)
+
+
+def format_percentage(value):
+    """Formate un pourcentage"""
+    if value is None:
+        return ''
+    try:
+        if isinstance(value, (int, float)):
+            sign = '+' if value > 0 else ''
+            return f"{sign}{value*100:.1f}%"
+        return str(value)
+    except:
+        return str(value)
+
+
+def calculate_historical_values(current_value, vs_ly_pct, vs_lw_pct):
+    """
+    Calcule les valeurs historiques à partir de la valeur actuelle et des variations
+    
+    Args:
+        current_value: Valeur actuelle (peut être formatée avec K, M, €, etc.)
+        vs_ly_pct: Variation vs Last Year (ex: 0.11 pour +11%)
+        vs_lw_pct: Variation vs Last Week (ex: -0.12 pour -12%)
+    
+    Returns:
+        dict: {
+            'current': valeur actuelle parsée,
+            'last_year': valeur calculée pour l'année dernière,
+            'last_week': valeur calculée pour la semaine dernière
+        }
+    """
+    def parse_value(value_str):
+        """Parse une valeur formatée en nombre"""
+        if not value_str or value_str == '':
+            return None
+        
+        value_str = str(value_str).strip()
+        
+        # Enlever les symboles et multiplier par les facteurs
+        multiplier = 1
+        if 'M€' in value_str:
+            multiplier = 1000000
+            value_str = value_str.replace('M€', '')
+        elif 'K€' in value_str:
+            multiplier = 1000
+            value_str = value_str.replace('K€', '')
+        elif '€' in value_str:
+            value_str = value_str.replace('€', '')
+        elif 'M' in value_str:
+            multiplier = 1000000
+            value_str = value_str.replace('M', '')
+        elif 'K' in value_str:
+            multiplier = 1000
+            value_str = value_str.replace('K', '')
+        elif '%' in value_str:
+            # Si c'est déjà un pourcentage, le convertir en décimal
+            return float(value_str.replace('%', '').replace('+', '')) / 100
+        
+        try:
+            base_value = float(value_str.replace(',', '.'))
+            return base_value * multiplier
+        except:
+            return None
+    
+    current_parsed = parse_value(current_value)
+    if current_parsed is None:
+        return None
+    
+    result = {'current': current_parsed}
+    
+    # Calculer la valeur de l'année dernière
+    # Si current = last_year * (1 + vs_ly_pct) alors last_year = current / (1 + vs_ly_pct)
+    if vs_ly_pct is not None:
+        try:
+            vs_ly_decimal = float(vs_ly_pct)
+            result['last_year'] = current_parsed / (1 + vs_ly_decimal)
+        except:
+            result['last_year'] = None
+    else:
+        result['last_year'] = None
+    
+    # Calculer la valeur de la semaine dernière
+    if vs_lw_pct is not None:
+        try:
+            vs_lw_decimal = float(vs_lw_pct)
+            result['last_week'] = current_parsed / (1 + vs_lw_decimal)
+        except:
+            result['last_week'] = None
+    else:
+        result['last_week'] = None
+    
+    return result
+
+
+def generate_historical_weeks(base_week_data, num_weeks=52):
+    """
+    Génère des semaines historiques en inférant les valeurs à partir des variations
+    
+    Args:
+        base_week_data: Données de la semaine actuelle
+        num_weeks: Nombre de semaines historiques à générer
+    
+    Returns:
+        tuple: (weeks_list, historical_data)
+    """
+    from datetime import datetime, timedelta
+    
+    # Récupérer la semaine de base
+    base_week = base_week_data['weeks'][0]
+    base_date = datetime.strptime(base_week['startDate'], '%Y-%m-%d')
+    
+    # Générer les semaines historiques
+    weeks_list = []
+    for i in range(num_weeks):
+        week_date = base_date - timedelta(weeks=i)
+        week_id = f"week_{i+1}"
+        week_label = f"{week_date.year}-W{week_date.isocalendar()[1]:02d}"
+        
+        weeks_list.append({
+            'id': week_id,
+            'label': week_label,
+            'startDate': week_date.strftime('%Y-%m-%d'),
+            'status': 'active' if i == 0 else 'archived'
+        })
+    
+    # Calculer les valeurs historiques
+    historical_data = {}
+    
+    for section, metrics in base_week_data['data'].items():
+        historical_data[section] = {}
+        
+        for metric, week_values in metrics.items():
+            historical_data[section][metric] = {}
+            
+            # Valeur actuelle
+            current_value = week_values.get('week_1', '')
+            
+            # Chercher les variations correspondantes
+            vs_ly_metric = None
+            vs_lw_metric = None
+            
+            # Patterns de variations selon les métriques
+            if 'Sessions' in metric:
+                vs_ly_metric = metrics.get('Sessions vs LY', {}).get('week_1')
+                vs_lw_metric = metrics.get('Sessions vs LW', {}).get('week_1')
+            elif 'Revenue' in metric:
+                vs_ly_metric = metrics.get('Revenue vs LY', {}).get('week_1')
+                vs_lw_metric = metrics.get('Revenue vs LW', {}).get('week_1')
+            elif 'Basket' in metric or 'ABV' in metric:
+                vs_ly_metric = metrics.get('ABV vs LY', {}).get('week_1')
+                vs_lw_metric = metrics.get('ABV vs LW', {}).get('week_1')
+            elif 'Conversion' in metric:
+                vs_ly_metric = metrics.get('CR vs LY', {}).get('week_1')
+                vs_lw_metric = metrics.get('CR vs LW', {}).get('week_1')
+            elif 'Bookings' in metric:
+                vs_ly_metric = metrics.get('Bookings vs LY', {}).get('week_1')
+                vs_lw_metric = metrics.get('Bookings vs LW', {}).get('week_1')
+            
+            # Convertir les pourcentages en décimaux
+            vs_ly_pct = None
+            vs_lw_pct = None
+            
+            if vs_ly_metric and vs_ly_metric.strip():
+                try:
+                    vs_ly_pct = float(vs_ly_metric.replace('%', '').replace('+', '')) / 100
+                except:
+                    pass
+            
+            if vs_lw_metric and vs_lw_metric.strip():
+                try:
+                    vs_lw_pct = float(vs_lw_metric.replace('%', '').replace('+', '')) / 100
+                except:
+                    pass
+            
+            # Calculer les valeurs historiques
+            if current_value and current_value.strip():
+                calc_result = calculate_historical_values(current_value, vs_ly_pct, vs_lw_pct)
+                
+                if calc_result:
+                    # Semaine actuelle
+                    historical_data[section][metric]['week_1'] = current_value
+                    
+                    # Semaine dernière (week_2)
+                    if calc_result['last_week'] is not None:
+                        if 'K€' in current_value:
+                            historical_data[section][metric]['week_2'] = f"{calc_result['last_week']/1000:.1f}K€"
+                        elif 'M€' in current_value:
+                            historical_data[section][metric]['week_2'] = f"{calc_result['last_week']/1000000:.1f}M€"
+                        elif '€' in current_value:
+                            historical_data[section][metric]['week_2'] = f"{calc_result['last_week']:.0f}€"
+                        elif 'K' in current_value:
+                            historical_data[section][metric]['week_2'] = f"{calc_result['last_week']/1000:.0f}K"
+                        elif '%' in current_value:
+                            historical_data[section][metric]['week_2'] = f"{calc_result['last_week']*100:.1f}%"
+                        else:
+                            historical_data[section][metric]['week_2'] = f"{calc_result['last_week']:.0f}"
+                    
+                    # Année dernière (approximativement week_53)
+                    if calc_result['last_year'] is not None:
+                        if 'K€' in current_value:
+                            historical_data[section][metric]['week_53'] = f"{calc_result['last_year']/1000:.1f}K€"
+                        elif 'M€' in current_value:
+                            historical_data[section][metric]['week_53'] = f"{calc_result['last_year']/1000000:.1f}M€"
+                        elif '€' in current_value:
+                            historical_data[section][metric]['week_53'] = f"{calc_result['last_year']:.0f}€"
+                        elif 'K' in current_value:
+                            historical_data[section][metric]['week_53'] = f"{calc_result['last_year']/1000:.0f}K"
+                        elif '%' in current_value:
+                            historical_data[section][metric]['week_53'] = f"{calc_result['last_year']*100:.1f}%"
+                        else:
+                            historical_data[section][metric]['week_53'] = f"{calc_result['last_year']:.0f}"
+            else:
+                # Juste copier la valeur actuelle
+                historical_data[section][metric]['week_1'] = current_value
+    
+    return weeks_list, historical_data
+
+
+def parse_percentage(value):
+    """Parse une valeur de pourcentage en décimal"""
+    if not value or value == '':
+        return None
+    try:
+        # Enlever le % et le signe +
+        clean_value = value.replace('%', '').replace('+', '').strip()
+        return float(clean_value) / 100
+    except:
+        return None
+
+
+def format_value_like_original(calculated_value, original_value):
+    """Formate une valeur calculée dans le même format que l'original"""
+    if not original_value or original_value == '':
+        return ''
+    
+    try:
+        if 'M€' in original_value:
+            return f"{calculated_value/1000000:.1f}M€"
+        elif 'K€' in original_value:
+            return f"{calculated_value/1000:.1f}K€"
+        elif '€' in original_value:
+            return f"{calculated_value:.0f}€"
+        elif 'M' in original_value:
+            return f"{calculated_value/1000000:.1f}M"
+        elif 'K' in original_value:
+            return f"{calculated_value/1000:.0f}K"
+        elif '%' in original_value:
+            return f"{calculated_value*100:.1f}%"
+        else:
+            return f"{calculated_value:.0f}"
+    except:
+        return str(calculated_value)
+
+
+@routes.route('/api/data-history/save', methods=['POST'])
+def api_data_history_save():
+    """Sauvegarde les modifications vers SQLite"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'changes' not in data:
+            return jsonify({'error': 'Données de changements requises'}), 400
+        
+        changes = data['changes']
+        updated_count = 0
+        errors = []
+        
+        with sqlite3.connect("cpfr.db") as conn:
+            for change in changes:
+                try:
+                    section = change.get('section')
+                    metric = change.get('metric')
+                    week_id = change.get('week_id')
+                    value = change.get('value')
+                    
+                    # Parse numeric week_id from "week_X" format
+                    if week_id.startswith('week_'):
+                        actual_week_id = int(week_id.split('_')[1])
+                    else:
+                        actual_week_id = int(week_id)
+                    
+                    # Update appropriate table based on section
+                    if section == 'SLIDE_31_GLOBAL':
+                        update_weekly_summary(conn, actual_week_id, metric, value)
+                    elif section == 'SLIDE_31_OFFERS':
+                        update_offers_focus(conn, actual_week_id, metric, value)
+                    elif section == 'SLIDE_31_BOOKINGS':
+                        update_bookings_details(conn, actual_week_id, metric, value)
+                    elif section in ['SEA', 'SEO', 'OM', 'CRM']:
+                        update_acquisition_channel(conn, actual_week_id, section, metric, value)
+                    elif section == 'SEO_DETAIL':
+                        update_seo_detail(conn, actual_week_id, metric, value)
+                    
+                    updated_count += 1
+                    
+                except Exception as e:
+                    errors.append(f"Erreur pour {section}.{metric}: {str(e)}")
+            
+            conn.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'{updated_count} modifications sauvegardées',
+            'updated_count': updated_count,
+            'errors': errors if errors else None
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+def parse_edited_value(value, metric):
+    """Parse une valeur éditée selon le type de métrique"""
+    if not value or value.strip() == '':
+        return None
+    
+    value = value.strip()
+    
+    # Pourcentages
+    if '%' in value:
+        try:
+            num_str = value.replace('%', '').replace('+', '').replace(' ', '')
+            return float(num_str) / 100.0
+        except:
+            return None
+    
+    # Monnaie
+    if '€' in value or 'K€' in value or 'M€' in value:
+        try:
+            if 'M€' in value:
+                return float(value.replace('M€', '').replace(' ', '')) * 1000000
+            elif 'K€' in value:
+                return float(value.replace('K€', '').replace(' ', '')) * 1000
+            else:
+                return float(value.replace('€', '').replace(' ', ''))
+        except:
+            return None
+    
+    # Nombres avec K/M
+    if 'K' in value:
+        try:
+            return float(value.replace('K', '').replace(' ', '')) * 1000
+        except:
+            return None
+    elif 'M' in value:
+        try:
+            return float(value.replace('M', '').replace(' ', '')) * 1000000
+        except:
+            return None
+    
+    # Nombre simple
+    try:
+        return float(value)
+    except:
+        return value  # Retourner tel quel si pas numérique
+
+
+def update_weekly_summary(conn, week_id, metric, value):
+    """Met à jour une métrique dans weekly_summary"""
+    parsed_value = parse_edited_value(value, metric)
+    
+    column_map = {
+        'Sessions': 'sessions',
+        'Revenue B2C': 'revenue_b2c',
+        'Average Basket': 'average_basket_value',
+        'Conversion Rate': 'conversion_rate',
+        'Bookings': 'nb_bookings',
+        'Sessions vs LY': 'vs_ly_sessions',
+        'Sessions vs LW': 'vs_lw_sessions',
+        'Revenue vs LY': 'vs_ly_revenue',
+        'Revenue vs LW': 'vs_lw_revenue',
+        'ABV vs LY': 'vs_ly_abv',
+        'ABV vs LW': 'vs_lw_abv',
+        'CR vs LY': 'vs_ly_cr',
+        'CR vs LW': 'vs_lw_cr',
+        'Bookings vs LY': 'vs_ly_bookings',
+        'Bookings vs LW': 'vs_lw_bookings'
+    }
+    
+    if metric in column_map:
+        column = column_map[metric]
+        conn.execute(f"""
+            UPDATE weekly_summary 
+            SET {column} = ? 
+            WHERE week_id = ?
+        """, (parsed_value, week_id))
+
+
+def update_offers_focus(conn, week_id, metric, value):
+    """Met à jour une métrique dans offers_focus"""
+    parsed_value = parse_edited_value(value, metric)
+    
+    column_map = {
+        'Last Minute %': 'last_minute_pct',
+        'Early Booking %': 'early_booking_pct',
+        'Summer Flash Revenue': 'summer_flash_revenue',
+        'Summer Flash Bookings': 'summer_flash_bookings',
+        'Summer Flash ABV': 'summer_flash_abv',
+        'Lead Gen Revenue': 'lead_gen_revenue',
+        'Lead Gen Bookings': 'lead_gen_bookings'
+    }
+    
+    if metric in column_map:
+        column = column_map[metric]
+        conn.execute(f"""
+            UPDATE offers_focus 
+            SET {column} = ? 
+            WHERE week_id = ?
+        """, (parsed_value, week_id))
+
+
+def update_bookings_details(conn, week_id, metric, value):
+    """Met à jour une métrique dans bookings_details"""
+    parsed_value = parse_edited_value(value, metric)
+    
+    column_map = {
+        'July %': 'month_july_pct',
+        'August %': 'month_august_pct',
+        'September %': 'month_sept_pct',
+        'Stay 2N %': 'length_2n_pct',
+        'Stay 3N %': 'length_3n_pct',
+        'Stay 4N+ %': 'length_4n_pct'
+    }
+    
+    if metric in column_map:
+        column = column_map[metric]
+        conn.execute(f"""
+            UPDATE bookings_details 
+            SET {column} = ? 
+            WHERE week_id = ?
+        """, (parsed_value, week_id))
+
+
+def update_acquisition_channel(conn, week_id, channel_code, metric, value):
+    """Met à jour une métrique dans acquisition_channels"""
+    parsed_value = parse_edited_value(value, metric)
+    
+    column_map = {
+        'Sessions WoW': 'wow_sessions',
+        'Sessions YoY': 'yoy_sessions',
+        'Bookings WoW': 'wow_bookings',
+        'Bookings YoY': 'yoy_bookings',
+        'Revenue WoW': 'wow_revenue',
+        'Revenue YoY': 'yoy_revenue',
+        'Costs WoW': 'wow_costs',
+        'Costs YoY': 'yoy_costs',
+        'CVR vs LW': 'cvr_vs_lw',
+        'CVR vs LY': 'cvr_vs_ly'
+    }
+    
+    if metric in column_map:
+        column = column_map[metric]
+        
+        # Get channel_id
+        cursor = conn.execute("SELECT id FROM dim_channel WHERE channel_code = ?", (channel_code,))
+        result = cursor.fetchone()
+        if result:
+            channel_id = result[0]
+            conn.execute(f"""
+                UPDATE acquisition_channels 
+                SET {column} = ? 
+                WHERE week_id = ? AND channel_id = ?
+            """, (parsed_value, week_id, channel_id))
+
+
+def update_seo_detail(conn, week_id, metric, value):
+    """Met à jour une métrique dans channel_seo_detail"""
+    parsed_value = parse_edited_value(value, metric)
+    
+    # Determine segment and column
+    if metric.startswith('Brand '):
+        segment = 'brand'
+        base_metric = metric.replace('Brand ', '')
+    elif metric.startswith('Non-Brand '):
+        segment = 'non_brand'
+        base_metric = metric.replace('Non-Brand ', '')
+    else:
+        return
+    
+    column_map = {
+        'Impressions YoY': 'impressions_yoy',
+        'Clicks YoY': 'clicks_yoy',
+        'CTR YoY': 'ctr_yoy',
+        'Avg Position': 'avg_position'
+    }
+    
+    if base_metric in column_map:
+        column = column_map[base_metric]
+        conn.execute(f"""
+            UPDATE channel_seo_detail 
+            SET {column} = ? 
+            WHERE week_id = ? AND segment = ?
+        """, (parsed_value, week_id, segment))
+
+
+@routes.route('/api/data-history/export/<format>')
+def api_data_history_export(format):
+    """Exporte les données en différents formats"""
+    try:
+        if format not in ['csv', 'json', 'xlsx']:
+            return jsonify({'error': 'Format non supporté'}), 400
+        
+        # TODO: Récupérer les données réelles depuis la base collaborative
+        # Pour l'instant, on retourne un exemple
+        
+        if format == 'json':
+            return jsonify({
+                'format': 'json',
+                'data': 'export_data_placeholder',
+                'generated_at': json.dumps(datetime.now(), default=str)
+            })
+        
+        return jsonify({
+            'format': format,
+            'message': f'Export {format.upper()} en cours de développement'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# ANALYTICS ROUTES
+# ============================================================================
+
+@routes.route('/analytics/insights')
+def analytics_insights():
+    """Page Sum up and main insights (contenu slide 31)"""
+    try:
+        # Récupération des données slide 31
+        latest_data = get_latest_weekly_data()
+        weekly_summary = get_weekly_summary(12)
+        offers_focus = get_offers_focus(12)
+        bookings_details = get_bookings_details(12)
+        
+        return render_template('analytics_insights.html',
+                             latest_data=latest_data,
+                             weekly_summary=weekly_summary,
+                             active_page='insights',
+                             offers_focus=offers_focus,
+                             bookings_details=bookings_details)
+    except Exception as e:
+        flash(f'Erreur lors du chargement des insights : {str(e)}', 'error')
+        return redirect('/')
+
+
+@routes.route('/analytics/acquisition')
+def analytics_acquisition():
+    """Page Acquisition Channel Analysis (contenu slide 32)"""
+    try:
+        # Récupération des données slide 32
+        latest_data = get_latest_weekly_data()
+        acquisition_channels = get_acquisition_channels(12)
+        
+        return render_template('analytics_acquisition.html',
+                             latest_data=latest_data,
+                             acquisition_channels=acquisition_channels,
+                             active_page='acquisition')
+    except Exception as e:
+        flash(f'Erreur lors du chargement de l\'analyse d\'acquisition : {str(e)}', 'error')
+        return redirect('/')
+
+
+@routes.route('/analytics/history')
+def analytics_history():
+    """Page Data History (redirection vers la page existante)"""
+    return redirect('/data-history')

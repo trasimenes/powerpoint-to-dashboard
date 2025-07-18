@@ -1,0 +1,350 @@
+{% extends 'base.html' %}
+{% block title %}Debug CPFR - Extraction Flow{% endblock %}
+
+{% block content %}
+<!-- Webpixels CSS -->
+<link href="https://unpkg.com/@webpixels/css@1.1.5/dist/index.css" rel="stylesheet">
+
+<style>
+    .dashboard-main {
+        background-color: #f8f9fb;
+        min-height: 100vh;
+    }
+    
+    .dashboard-header {
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 1.5rem 0;
+    }
+</style>
+
+<!-- Dashboard -->
+<div class="d-flex flex-column flex-lg-row h-lg-full">
+    {% include 'partials/navigation.html' %}
+    
+    <!-- Main content -->
+    <div class="h-screen flex-grow-1 overflow-y-lg-auto dashboard-main">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="container-fluid">
+                <div class="row align-items-center">
+                    <div class="col-sm-6 col-12">
+                        <h1 class="h2 mb-0 ls-tight">Debug CPFR - Visualisation des associations</h1>
+                        <p class="text-muted mb-0">Analysez et corrigez les associations de textes extraits</p>
+                    </div>
+                    <div class="col-sm-6 col-12 text-sm-end">
+                        <a href="/cpfr" class="btn btn-outline-primary me-2">
+                            <i class="bi bi-arrow-left me-1"></i>Retour Dashboard
+                        </a>
+                        <button id="reprocess" class="btn btn-success">
+                            <i class="bi bi-arrow-repeat me-1"></i>Reprocesser
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main -->
+        <main class="py-6">
+            <div class="container-fluid">
+
+<!-- Contrôles -->
+<div class="row mb-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Contrôles</h6>
+      </div>
+      <div class="card-body">
+        <div class="btn-group mb-2" role="group">
+          <button id="auto-connect" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-link-45deg me-1"></i>Auto-connect
+          </button>
+          <button id="clear-connections" class="btn btn-outline-warning btn-sm">
+            <i class="bi bi-scissors me-1"></i>Clear All
+          </button>
+          <button id="export-config" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-download me-1"></i>Export
+          </button>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="show-debug" checked>
+          <label class="form-check-label" for="show-debug">
+            Afficher infos debug
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Statistiques</h6>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-4">
+            <div class="text-primary">
+              <strong id="total-nodes">0</strong>
+              <div class="small text-muted">Nœuds</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="text-success">
+              <strong id="total-connections">0</strong>
+              <div class="small text-muted">Connexions</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="text-info">
+              <strong id="total-groups">0</strong>
+              <div class="small text-muted">Groupes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Zone Drawflow -->
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-diagram-2 me-2"></i>Flow d'extraction CPFR</h6>
+      </div>
+      <div class="card-body p-0">
+        <div id="drawflow" style="height: 600px; width: 100%;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Panneau de configuration -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-code-slash me-2"></i>Configuration JSON</h6>
+      </div>
+      <div class="card-body">
+        <textarea id="json-config" class="form-control" rows="10" placeholder="Configuration JSON sera générée ici..."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/drawflow/dist/drawflow.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/drawflow/dist/drawflow.min.css">
+
+<style>
+  .drawflow .drawflow_node_content {
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 12px;
+    max-width: 220px;
+    word-wrap: break-word;
+  }
+  
+  .node-sessions { background: #e3f2fd; border: 2px solid #1976d2; }
+  .node-revenue { background: #e8f5e8; border: 2px solid #388e3c; }
+  .node-basket { background: #fff3e0; border: 2px solid #f57c00; }
+  .node-conversion { background: #f3e5f5; border: 2px solid #7b1fa2; }
+  .node-bookings { background: #ffebee; border: 2px solid #d32f2f; }
+  .node-unassigned { background: #f5f5f5; border: 2px solid #757575; }
+  
+  .node-value { font-weight: bold; }
+  .node-label { font-style: italic; }
+  .node-variation { font-size: 11px; }
+  
+  #drawflow {
+    background: linear-gradient(90deg, #f0f0f0 1px, transparent 1px),
+                linear-gradient(#f0f0f0 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+</style>
+
+<script>
+// Données d'extraction (chargées depuis l'API)
+let extractedTexts = [];
+let debugData = null;
+
+// Initialisation Drawflow
+const editor = new Drawflow(document.getElementById('drawflow'));
+editor.start();
+
+// Fonction pour créer les nœuds
+function createNodes() {
+  const positions = {
+    sessions: {x: 50, y: 50},
+    revenue: {x: 300, y: 50},
+    basket: {x: 550, y: 50},
+    conversion: {x: 50, y: 250},
+    bookings: {x: 300, y: 250}
+  };
+  
+  let offsetY = 0;
+  
+  extractedTexts.forEach((item, index) => {
+    const basePos = positions[item.category] || {x: 550, y: 250};
+    const x = basePos.x + (item.type === 'value' ? 0 : 0);
+    const y = basePos.y + offsetY;
+    
+    if (item.type === 'label_variations') {
+      offsetY += 80;
+    }
+    
+    const nodeHtml = `
+      <div class="drawflow_node_content node-${item.category} node-${item.type}">
+        <div class="fw-bold">${item.category.toUpperCase()}</div>
+        <div class="mt-1">${item.text}</div>
+        <div class="mt-2 small text-muted">
+          <span class="badge bg-secondary">conf: ${(item.confidence * 100).toFixed(0)}%</span>
+          <span class="badge bg-info">${item.type}</span>
+        </div>
+      </div>
+    `;
+    
+    editor.addNode(
+      `node_${item.id}`,
+      1, 1,
+      x, y,
+      `input_${item.id}`,
+      {text: item.text, category: item.category, type: item.type},
+      nodeHtml
+    );
+    
+    if (item.type === 'label_variations') {
+      offsetY = 0;
+    }
+  });
+  
+  updateStats();
+}
+
+// Fonction pour auto-connecter par catégorie
+function autoConnect() {
+  const categories = ['sessions', 'revenue', 'basket', 'conversion', 'bookings'];
+  
+  categories.forEach(category => {
+    const categoryNodes = extractedTexts.filter(item => item.category === category);
+    const valueNode = categoryNodes.find(item => item.type === 'value');
+    const labelNode = categoryNodes.find(item => item.type === 'label_variations');
+    
+    if (valueNode && labelNode) {
+      try {
+        editor.addConnection(
+          valueNode.id, labelNode.id,
+          `output_1`, `input_${labelNode.id}`
+        );
+      } catch (e) {
+        console.log('Connexion déjà existante:', e);
+      }
+    }
+  });
+  
+  updateStats();
+}
+
+// Fonction pour nettoyer les connexions
+function clearConnections() {
+  const data = editor.export();
+  Object.values(data.drawflow.Home.data).forEach(node => {
+    Object.keys(node.outputs).forEach(outputKey => {
+      node.outputs[outputKey].connections = [];
+    });
+  });
+  editor.import(data);
+  updateStats();
+}
+
+// Fonction pour exporter la configuration
+function exportConfig() {
+  const config = editor.export();
+  document.getElementById('json-config').value = JSON.stringify(config, null, 2);
+  
+  // Créer un format plus lisible pour l'utilisation
+  const associations = {};
+  Object.values(config.drawflow.Home.data).forEach(node => {
+    const category = node.data.category;
+    if (!associations[category]) {
+      associations[category] = [];
+    }
+    associations[category].push({
+      id: node.id,
+      text: node.data.text,
+      type: node.data.type,
+      connections: Object.values(node.outputs).flatMap(output => 
+        output.connections.map(conn => conn.node)
+      )
+    });
+  });
+  
+  console.log('Associations par catégorie:', associations);
+}
+
+// Fonction pour mettre à jour les statistiques
+function updateStats() {
+  const data = editor.export();
+  const nodes = Object.keys(data.drawflow.Home.data).length;
+  const connections = Object.values(data.drawflow.Home.data)
+    .flatMap(node => Object.values(node.outputs))
+    .flatMap(output => output.connections).length;
+  const groups = new Set(Object.values(data.drawflow.Home.data).map(node => node.data.category)).size;
+  
+  document.getElementById('total-nodes').textContent = nodes;
+  document.getElementById('total-connections').textContent = connections;
+  document.getElementById('total-groups').textContent = groups;
+}
+
+// Événements
+document.getElementById('auto-connect').addEventListener('click', autoConnect);
+document.getElementById('clear-connections').addEventListener('click', clearConnections);
+document.getElementById('export-config').addEventListener('click', exportConfig);
+
+document.getElementById('reprocess').addEventListener('click', () => {
+  const config = editor.export();
+  // Ici on pourrait envoyer la config au serveur pour reprocessing
+  console.log('Reprocessing avec configuration:', config);
+  alert('Configuration sauvegardée ! (voir console)');
+});
+
+// Fonction pour charger les données depuis l'API
+async function loadDebugData() {
+  try {
+    const response = await fetch('/api/cpfr/debug-data');
+    debugData = await response.json();
+    extractedTexts = debugData.texts;
+    
+    // Mettre à jour l'interface
+    document.querySelector('h1').innerHTML = `
+      <i class="bi bi-diagram-3 me-2"></i>Debug CPFR - Visualisation des associations
+      <small class="text-muted">(${debugData.extraction_source} - ${debugData.timestamp})</small>
+    `;
+    
+    // Créer les nœuds et connexions
+    createNodes();
+    autoConnect();
+    
+  } catch (error) {
+    console.error('Erreur lors du chargement des données:', error);
+    alert('Erreur lors du chargement des données de debug: ' + error.message);
+  }
+}
+
+// Initialisation
+loadDebugData();
+
+// Mise à jour des stats quand on modifie le flow
+editor.on('connectionCreated', updateStats);
+editor.on('connectionRemoved', updateStats);
+editor.on('nodeRemoved', updateStats);
+</script>
+
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

@@ -1,194 +1,291 @@
 {% extends 'base.html' %}
 {% block title %}Historique des extractions{% endblock %}
 {% block content %}
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="d-flex justify-content-between align-items-center">
-      <h2 class="mb-0">
-        <i class="bi bi-clock-history me-2"></i>Historique des extractions
-      </h2>
-      <a href="/" class="btn btn-primary">
-        <i class="bi bi-plus-circle me-1"></i>Nouvelle analyse
-      </a>
-    </div>
-    <hr>
-  </div>
-</div>
+<!-- Webpixels CSS -->
+<link href="https://unpkg.com/@webpixels/css@1.1.5/dist/index.css" rel="stylesheet">
 
-<!-- Statistiques -->
-{% if stats %}
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-header bg-light">
-        <h5 class="card-title mb-0">
-          <i class="bi bi-graph-up me-2"></i>Statistiques de l'application
-        </h5>
-      </div>
-      <div class="card-body">
-        <div class="row text-center">
-          <div class="col-md-3">
-            <div class="border-end">
-              <h3 class="text-primary">{{ stats.total_extractions }}</h3>
-              <p class="text-muted mb-0">Analyses totales</p>
+<style>
+    .dashboard-main {
+        background-color: #f8f9fb;
+        min-height: 100vh;
+    }
+    
+    .module-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 0;
+        margin-bottom: 2rem;
+    }
+    
+    .module-card .card-header {
+        background: transparent;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 1.5rem 1.5rem 1rem;
+    }
+    
+    .module-card .card-body {
+        padding: 1.5rem;
+    }
+    
+    .dashboard-header {
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 1.5rem 0;
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 0;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+<!-- Dashboard -->
+<div class="d-flex flex-column flex-lg-row h-lg-full">
+    {% include 'partials/navigation.html' %}
+    
+    <!-- Main content -->
+    <div class="h-screen flex-grow-1 overflow-y-lg-auto dashboard-main">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="container-fluid">
+                <div class="row align-items-center">
+                    <div class="col-sm-6 col-12">
+                        <h1 class="h2 mb-0 ls-tight">Historique des extractions</h1>
+                        <p class="text-muted mb-0">Toutes les analyses PowerPoint effectuées</p>
+                    </div>
+                    <div class="col-sm-6 col-12 text-sm-end">
+                        <a href="/" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>Nouvelle analyse
+                        </a>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div class="col-md-3">
-            <div class="border-end">
-              <h3 class="text-success">{{ stats.successful_extractions }}</h3>
-              <p class="text-muted mb-0">Analyses réussies</p>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="border-end">
-              <h3 class="text-warning">{{ stats.failed_extractions }}</h3>
-              <p class="text-muted mb-0">Analyses échouées</p>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div>
-              <h3 class="text-info">
-                {% if stats.last_extraction %}
-                  <small>{{ stats.last_extraction.split(' ')[0] }}</small>
-                {% else %}
-                  -
+        </header>
+        
+        <!-- Main -->
+        <main class="py-6">
+            <div class="container-fluid">
+
+                <!-- Statistiques -->
+                {% if stats %}
+                <div class="row g-4 mb-6">
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card stats-card">
+                            <div class="card-body p-4">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="text-muted small mb-1">Analyses totales</div>
+                                        <div class="h3 mb-0 text-primary">{{ stats.total_extractions }}</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: linear-gradient(135deg, #fec5bb 0%, #fcd5ce 100%);">
+                                            <i class="bi bi-files text-white"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card stats-card">
+                            <div class="card-body p-4">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="text-muted small mb-1">Analyses réussies</div>
+                                        <div class="h3 mb-0 text-success">{{ stats.successful_extractions }}</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: linear-gradient(135deg, #fae1dd 0%, #f8edeb 100%);">
+                                            <i class="bi bi-check-circle text-white"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card stats-card">
+                            <div class="card-body p-4">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="text-muted small mb-1">Analyses échouées</div>
+                                        <div class="h3 mb-0 text-warning">{{ stats.failed_extractions }}</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: linear-gradient(135deg, #e8e8e4 0%, #d8e2dc 100%);">
+                                            <i class="bi bi-exclamation-triangle text-white"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card stats-card">
+                            <div class="card-body p-4">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="text-muted small mb-1">Dernière analyse</div>
+                                        <div class="h3 mb-0 text-info">
+                                            {% if stats.last_extraction %}
+                                                <small>{{ stats.last_extraction.split(' ')[0] }}</small>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: linear-gradient(135deg, #ece4db 0%, #ffe5d9 100%);">
+                                            <i class="bi bi-clock-history text-white"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% endif %}
-              </h3>
-              <p class="text-muted mb-0">Dernière analyse</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-{% endif %}
 
-{% if history %}
-  <div class="card">
-    <div class="card-header bg-secondary text-white">
-      <h5 class="card-title mb-0">
-        <i class="bi bi-table me-2"></i>Liste des analyses effectuées
-      </h5>
-    </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead class="table-dark">
-            <tr>
-              <th scope="col">
-                <i class="bi bi-calendar me-1"></i>Date
-              </th>
-              <th scope="col">
-                <i class="bi bi-file-earmark me-1"></i>Fichier
-              </th>
-              <th scope="col">
-                <i class="bi bi-collection me-1"></i>Slides
-              </th>
-              <th scope="col">
-                <i class="bi bi-bar-chart me-1"></i>KPIs extraits
-              </th>
-              <th scope="col">
-                <i class="bi bi-info-circle me-1"></i>Détails
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in history %}
-              <tr>
-                <td>
-                  <div class="d-flex flex-column">
-                    <span class="fw-bold">{{ item['timestamp'].split(' ')[0] }}</span>
-                    <small class="text-muted">{{ item['timestamp'].split(' ')[1] }}</small>
-                  </div>
-                </td>
-                <td>
-                  <div class="d-flex align-items-center">
-                    <i class="bi bi-file-earmark-ppt text-primary me-2"></i>
-                    <span class="text-truncate" style="max-width: 200px;" title="{{ item['filename'] }}">
-                      {{ item['filename'] }}
-                    </span>
-                  </div>
-                </td>
-                <td>
-                  <span class="badge bg-info">
-                    {{ item['slide_start'] }} → {{ item['slide_end'] }}
-                  </span>
-                </td>
-                <td>
-                  {% if item['kpi'] %}
-                    <span class="badge bg-success">{{ item['kpi']|length }} KPIs</span>
-                    <div class="small text-muted mt-1">
-                      {% for kpi in item['kpi'][:2] %}
-                        {{ kpi[:30] }}{% if kpi|length > 30 %}...{% endif %}{% if not loop.last %}, {% endif %}
-                      {% endfor %}
-                      {% if item['kpi']|length > 2 %}
-                        <span class="text-muted">+{{ item['kpi']|length - 2 }} autres</span>
-                      {% endif %}
+                {% if history %}
+                <div class="card module-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-table me-2"></i>Liste des analyses effectuées
+                        </h5>
                     </div>
-                  {% else %}
-                    <span class="badge bg-warning">Aucun KPI</span>
-                  {% endif %}
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-outline-primary" type="button" 
-                          data-bs-toggle="collapse" 
-                          data-bs-target="#details-{{ loop.index }}" 
-                          aria-expanded="false">
-                    <i class="bi bi-eye me-1"></i>Voir
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td colspan="5" class="p-0">
-                  <div class="collapse" id="details-{{ loop.index }}">
-                    <div class="card card-body m-3 border-start border-primary border-4">
-                      <h6 class="text-primary mb-3">
-                        <i class="bi bi-list-ul me-2"></i>Détails de l'extraction
-                      </h6>
-                      <div class="row">
-                        <div class="col-md-6">
-                          <h6 class="text-success">KPIs extraits :</h6>
-                          {% if item['kpi'] %}
-                            <ul class="list-unstyled">
-                              {% for kpi in item['kpi'] %}
-                                <li class="mb-2">
-                                  <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                  {{ kpi }}
-                                </li>
-                              {% endfor %}
-                            </ul>
-                          {% else %}
-                            <p class="text-muted">Aucun KPI extrait</p>
-                          {% endif %}
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">
+                                            <i class="bi bi-calendar me-1"></i>Date
+                                        </th>
+                                        <th scope="col">
+                                            <i class="bi bi-file-earmark me-1"></i>Fichier
+                                        </th>
+                                        <th scope="col">
+                                            <i class="bi bi-collection me-1"></i>Slides
+                                        </th>
+                                        <th scope="col">
+                                            <i class="bi bi-bar-chart me-1"></i>KPIs extraits
+                                        </th>
+                                        <th scope="col">
+                                            <i class="bi bi-info-circle me-1"></i>Détails
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in history %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex flex-column">
+                                                <span class="fw-bold">{{ item['timestamp'].split(' ')[0] }}</span>
+                                                <small class="text-muted">{{ item['timestamp'].split(' ')[1] }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-file-earmark-ppt text-primary me-2"></i>
+                                                <span class="text-truncate" style="max-width: 200px;" title="{{ item['filename'] }}">
+                                                    {{ item['filename'] }}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                {{ item['slide_start'] }} → {{ item['slide_end'] }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if item['kpi'] %}
+                                                <span class="badge bg-success">{{ item['kpi']|length }} KPIs</span>
+                                                <div class="small text-muted mt-1">
+                                                    {% for kpi in item['kpi'][:2] %}
+                                                        {{ kpi[:30] }}{% if kpi|length > 30 %}...{% endif %}{% if not loop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                    {% if item['kpi']|length > 2 %}
+                                                        <span class="text-muted">+{{ item['kpi']|length - 2 }} autres</span>
+                                                    {% endif %}
+                                                </div>
+                                            {% else %}
+                                                <span class="badge bg-warning">Aucun KPI</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" type="button" 
+                                                    data-bs-toggle="collapse" 
+                                                    data-bs-target="#details-{{ loop.index }}" 
+                                                    aria-expanded="false">
+                                                <i class="bi bi-eye me-1"></i>Voir
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="5" class="p-0">
+                                            <div class="collapse" id="details-{{ loop.index }}">
+                                                <div class="card card-body m-3 border-start border-primary border-4">
+                                                    <h6 class="text-primary mb-3">
+                                                        <i class="bi bi-list-ul me-2"></i>Détails de l'extraction
+                                                    </h6>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <h6 class="text-success">KPIs extraits :</h6>
+                                                            {% if item['kpi'] %}
+                                                                <ul class="list-unstyled">
+                                                                    {% for kpi in item['kpi'] %}
+                                                                        <li class="mb-2">
+                                                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                                                            {{ kpi }}
+                                                                        </li>
+                                                                    {% endfor %}
+                                                                </ul>
+                                                            {% else %}
+                                                                <p class="text-muted">Aucun KPI extrait</p>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <h6 class="text-info">Informations :</h6>
+                                                            <ul class="list-unstyled">
+                                                                <li><strong>Fichier :</strong> {{ item['filename'] }}</li>
+                                                                <li><strong>Slides analysées :</strong> {{ item['slide_start'] }} à {{ item['slide_end'] }}</li>
+                                                                <li><strong>Date :</strong> {{ item['timestamp'] }}</li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="col-md-6">
-                          <h6 class="text-info">Informations :</h6>
-                          <ul class="list-unstyled">
-                            <li><strong>Fichier :</strong> {{ item['filename'] }}</li>
-                            <li><strong>Slides analysées :</strong> {{ item['slide_start'] }} à {{ item['slide_end'] }}</li>
-                            <li><strong>Date :</strong> {{ item['timestamp'] }}</li>
-                          </ul>
-                        </div>
-                      </div>
                     </div>
-                  </div>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h3 class="text-muted mt-3">Aucun historique disponible</h3>
+                    <p class="text-muted">Commencez par analyser votre premier fichier PowerPoint</p>
+                    <a href="/" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-circle me-2"></i>Première analyse
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </main>
     </div>
-  </div>
-{% else %}
-  <div class="text-center py-5">
-    <i class="bi bi-inbox display-1 text-muted"></i>
-    <h3 class="text-muted mt-3">Aucun historique disponible</h3>
-    <p class="text-muted">Commencez par analyser votre premier fichier PowerPoint</p>
-    <a href="/" class="btn btn-primary btn-lg">
-      <i class="bi bi-plus-circle me-2"></i>Première analyse
-    </a>
-  </div>
-{% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 {% endblock %}
